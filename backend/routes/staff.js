@@ -86,6 +86,70 @@ router.post('/register-admin', async (req, res) => {
   }
 });
 
+// Initialize Admin - Debug endpoint to ensure admin exists and is properly configured
+router.get('/init-admin', async (req, res) => {
+  try {
+    // Check if admin exists
+    let admin = await Staff.findOne({ email: 'admin@admin.com' });
+    
+    if (admin) {
+      // Admin exists, but make sure it's not broken
+      let updated = false;
+      
+      if (admin.password !== 'admin') {
+        admin.password = 'admin';
+        updated = true;
+      }
+      
+      if (!admin.isActive) {
+        admin.isActive = true;
+        updated = true;
+      }
+      
+      if (admin.role !== 'admin') {
+        admin.role = 'admin';
+        updated = true;
+      }
+      
+      if (updated) {
+        await admin.save();
+      }
+      
+      return res.json({
+        status: 'success',
+        message: 'Admin account verified and ready',
+        email: 'admin@admin.com',
+        password: 'admin',
+        updated: updated
+      });
+    } else {
+      // Create new admin
+      const newAdmin = new Staff({
+        name: 'Admin User',
+        email: 'admin@admin.com',
+        password: 'admin',
+        role: 'admin',
+        isActive: true,
+      });
+      
+      await newAdmin.save();
+      
+      return res.json({
+        status: 'created',
+        message: 'Admin account created successfully',
+        email: 'admin@admin.com',
+        password: 'admin'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Error initializing admin', 
+      error: error.message 
+    });
+  }
+});
+
 // Staff Login
 router.post('/login', async (req, res) => {
   try {

@@ -197,6 +197,7 @@
 
         if (!response.ok) {
           showMessage(data.message || 'Login failed', 'error');
+          console.error('Login failed:', data);
           return;
         }
 
@@ -206,7 +207,7 @@
         localStorage.setItem('staffEmail', data.staff.email);
         localStorage.setItem('staffRole', data.staff.role);
 
-        showMessage('Login successful!', 'success');
+        showMessage('Login successful! Redirecting...', 'success');
 
         // Redirect based on role
         setTimeout(() => {
@@ -216,9 +217,12 @@
             window.location.href = '/shop-dashboard';
           } else if (data.staff.role === 'warehouse') {
             window.location.href = '/warehouse-dashboard';
+          } else {
+            showMessage('Unknown role: ' + data.staff.role, 'error');
           }
-        }, 1000);
+        }, 500);
       } catch (error) {
+        console.error('Login error:', error);
         showMessage('Error connecting to server: ' + error.message, 'error');
       } finally {
         loadingEl.style.display = 'none';
