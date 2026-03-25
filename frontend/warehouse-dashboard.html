@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warehouse Manager Dashboard - Rental System</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .dashboard-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid #e74c3c;
+    }
+
+    .dashboard-card h3 {
+      color: #2c3e50;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      color: #7f8c8d;
+    }
+
+    .dashboard-card .number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #e74c3c;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid #ecf0f1;
+    }
+
+    .tab-button {
+      padding: 0.75rem 1.5rem;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      color: #7f8c8d;
+      transition: all 0.3s;
+    }
+
+    .tab-button.active {
+      color: #e74c3c;
+      border-bottom-color: #e74c3c;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .order-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-top: 1.5rem;
+    }
+
+    .order-table th {
+      background: #34495e;
+      color: white;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .order-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #ecf0f1;
+    }
+
+    .order-table tr:hover {
+      background: #f8f9fa;
+    }
+
+    .status-badge {
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-confirmed {
+      background: #d5f4e6;
+      color: #27ae60;
+    }
+
+    .order-type-badge {
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .order-type-warehouse {
+      background: #cfe9f3;
+      color: #0c5460;
+    }
+
+    .order-type-customer {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      padding: 2rem;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid #ecf0f1;
+      padding-bottom: 1rem;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      color: #2c3e50;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #7f8c8d;
+    }
+
+    .order-detail {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      padding: 0.25rem 0;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .detail-value {
+      color: #7f8c8d;
+    }
+
+    .btn-small {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      margin-right: 0.5rem;
+    }
+
+    .btn-confirm {
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    .btn-confirm:hover {
+      background: #229954;
+    }
+
+    .btn-confirm:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+
+    .inventory-summary {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-top: 1.5rem;
+    }
+
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .inventory-item {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 4px;
+      border-left: 4px solid #e74c3c;
+    }
+
+    .inventory-item .shop-name {
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 0.5rem;
+    }
+
+    .inventory-item .item-desc {
+      font-size: 0.9rem;
+      color: #7f8c8d;
+      margin-bottom: 0.5rem;
+    }
+
+    .inventory-item .qty {
+      font-weight: bold;
+      color: #e74c3c;
+      font-size: 1.2rem;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-container {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        flex-wrap: wrap;
+      }
+
+      .tab-button {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="/" class="brand">🏠 RentalSystem</a>
+      <ul class="nav-links">
+        <li><a href="#" onclick="staffLogout(); return false;">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <div id="alert" class="alert"></div>
+
+      <div class="dashboard-header">
+        <h1>🏭 Warehouse Manager Dashboard</h1>
+        <p>Manage shop orders and inventory requests</p>
+      </div>
+
+      <!-- Stats Section -->
+      <div class="dashboard-container">
+        <div class="dashboard-card">
+          <h3>Pending Orders</h3>
+          <div class="number" id="pendingOrders">0</div>
+        </div>
+        <div class="dashboard-card" style="border-left-color: #27ae60;">
+          <h3>Confirmed Today</h3>
+          <div class="number" style="color: #27ae60;" id="confirmedToday">0</div>
+        </div>
+        <div class="dashboard-card" style="border-left-color: #3498db;">
+          <h3>Total Orders</h3>
+          <div class="number" style="color: #3498db;" id="totalOrders">0</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-button active" onclick="switchTab('pending')">⏳ Pending Orders</button>
+        <button class="tab-button" onclick="switchTab('confirmed')">✅ Confirmed Orders</button>
+        <button class="tab-button" onclick="switchTab('inventory')">📊 Shop Inventory</button>
+        <button class="tab-button" onclick="switchTab('manage-inventory')">📦 Manage Inventory</button>
+      </div>
+
+      <!-- Pending Orders Tab -->
+      <div id="pending" class="tab-content active">
+        <h2>Pending Shop Orders</h2>
+        <table class="order-table" id="pendingTable">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Days</th>
+              <th>Total</th>
+              <th>Type</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="pendingBody">
+            <tr><td colspan="7" class="text-center">Loading orders...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Confirmed Orders Tab -->
+      <div id="confirmed" class="tab-content">
+        <h2>Confirmed Orders</h2>
+        <table class="order-table" id="confirmedTable">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Days</th>
+              <th>Total</th>
+              <th>Confirmed At</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="confirmedBody">
+            <tr><td colspan="7" class="text-center">Loading orders...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Shop Inventory Tab -->
+      <div id="inventory" class="tab-content">
+        <h2>Shop Inventory Summary</h2>
+        <div class="inventory-summary">
+          <p style="color: #7f8c8d; margin-bottom: 1rem;">Orders grouped by shop and item:</p>
+          <div class="inventory-grid" id="inventorySummary">
+            <div class="text-center" style="grid-column: 1/-1;">Loading inventory...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manage Inventory Tab -->
+      <div id="manage-inventory" class="tab-content">
+        <h2>Warehouse Inventory Management</h2>
+        
+        <!-- Add New Item Section -->
+        <div class="form-section" style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+          <h3 style="margin-bottom: 1.5rem; color: #2c3e50;">Add New Item</h3>
+          <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+              <label>Item Number</label>
+              <input type="number" id="newItemNumber" placeholder="Item #" min="1">
+            </div>
+            <div>
+              <label>Item Name *</label>
+              <input type="text" id="newItemName" placeholder="e.g., Angle Grinder 4\"" required>
+            </div>
+          </div>
+          <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+              <label>Category</label>
+              <input type="text" id="newItemCategory" placeholder="e.g., Grinders">
+            </div>
+            <div>
+              <label>Price per Day (Rs.) *</label>
+              <input type="number" id="newItemPrice" placeholder="0.00" step="0.01" min="0" required>
+            </div>
+          </div>
+          <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+              <label>Initial Quantity *</label>
+              <input type="number" id="newItemQty" placeholder="0" min="0" required>
+            </div>
+            <div>
+              <label>Description</label>
+              <input type="text" id="newItemDesc" placeholder="Optional">
+            </div>
+          </div>
+          <button onclick="addNewItem()" class="btn-confirm" style="background: #3498db; margin-top: 0;">
+            ➕ Add Item
+          </button>
+        </div>
+
+        <!-- Inventory List -->
+        <h3 style="margin-bottom: 1rem; color: #2c3e50;">Current Inventory</h3>
+        <table class="order-table" id="inventoryTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Price/Day (Rs.)</th>
+              <th>Quantity</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryBody">
+            <tr><td colspan="6" class="text-center">Loading inventory...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Order Detail Modal -->
+  <div id="orderModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Order Details</h2>
+        <button class="close-modal" onclick="closeModal()">&times;</button>
+      </div>
+
+      <div class="order-detail">
+        <div class="detail-row">
+          <span class="detail-label">Shop:</span>
+          <span class="detail-value" id="modalShop">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Item:</span>
+          <span class="detail-value" id="modalItem">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Quantity:</span>
+          <span class="detail-value" id="modalQty">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Rental Days:</span>
+          <span class="detail-value" id="modalDays">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Total Price:</span>
+          <span class="detail-value" id="modalPrice">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Order Type:</span>
+          <span class="detail-value" id="modalType">-</span>
+        </div>
+      </div>
+
+      <div id="customerInfoSection" style="display: none;">
+        <h3 style="margin-top: 1.5rem; margin-bottom: 1rem; color: #2c3e50;">Customer Information</h3>
+        <div class="order-detail">
+          <div class="detail-row">
+            <span class="detail-label">Name:</span>
+            <span class="detail-value" id="modalCustomerName">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Phone:</span>
+            <span class="detail-value" id="modalCustomerPhone">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Address:</span>
+            <span class="detail-value" id="modalCustomerAddress">-</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="confirmBtn" class="btn-confirm" onclick="confirmOrder()" style="display: none;">
+        ✅ Confirm Order
+      </button>
+    </div>
+  </div>
+
+  <script src="/utils.js"></script>
+  <script>
+    let currentOrderId = null;
+    let allOrders = [];
+
+    function requireWarehouseManager() {
+      if (!isStaffLoggedIn()) {
+        window.location.href = '/staff-login';
+      }
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+
+      if (tabName === 'confirmed') {
+        loadConfirmedOrders();
+      } else if (tabName === 'inventory') {
+        loadInventorySummary();
+      } else if (tabName === 'manage-inventory') {
+        loadAllInventory();
+      }
+    }
+
+    async function loadDashboard() {
+      try {
+        const response = await fetch('/api/shop-orders/warehouse/dashboard', {
+          headers: { 'x-staff-id': localStorage.getItem('staffId') }
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          document.getElementById('pendingOrders').textContent = data.stats.pending;
+          document.getElementById('confirmedToday').textContent = data.stats.confirmedToday || 0;
+          document.getElementById('totalOrders').textContent = data.stats.total;
+          loadPendingOrders();
+        } else {
+          showError(data);
+        }
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    async function loadPendingOrders() {
+      try {
+        const response = await fetch('/api/shop-orders/warehouse/all', {
+          headers: { 'x-staff-id': localStorage.getItem('staffId') }
+        });
+        const orders = await response.json();
+        allOrders = orders;
+
+        const tbody = document.getElementById('pendingBody');
+        if (!orders || orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center">No pending orders</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = orders.filter(o => o.status === 'pending').map(order => `
+          <tr>
+            <td>${order.shopId?.name || 'Unknown Shop'}</td>
+            <td>${order.itemId?.name || 'Unknown Item'}</td>
+            <td>${order.quantity}</td>
+            <td>${order.rentalDays}</td>
+            <td>Rs. ${order.totalPrice?.toFixed(2) || '0.00'}</td>
+            <td>
+              <span class="status-badge ${order.orderType === 'customer' ? 'order-type-customer' : 'order-type-warehouse'}">
+                ${order.orderType === 'customer' ? '👤 Customer' : '📥 Shop'}
+              </span>
+            </td>
+            <td>
+              <button onclick="viewOrderDetails('${order._id}')" class="btn-small" style="background: #3498db; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer;">
+                View
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    async function loadConfirmedOrders() {
+      try {
+        const response = await fetch('/api/shop-orders/warehouse/all', {
+          headers: { 'x-staff-id': localStorage.getItem('staffId') }
+        });
+        const orders = await response.json();
+
+        const tbody = document.getElementById('confirmedBody');
+        const confirmed = orders.filter(o => o.status === 'confirmed');
+        
+        if (confirmed.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center">No confirmed orders</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = confirmed.map(order => `
+          <tr>
+            <td>${order.shopId?.name || 'Unknown Shop'}</td>
+            <td>${order.itemId?.name || 'Unknown Item'}</td>
+            <td>${order.quantity}</td>
+            <td>${order.rentalDays}</td>
+            <td>Rs. ${order.totalPrice?.toFixed(2) || '0.00'}</td>
+            <td>${new Date(order.confirmedAt).toLocaleDateString()}</td>
+            <td>
+              <span class="status-badge ${order.orderType === 'customer' ? 'order-type-customer' : 'order-type-warehouse'}">
+                ${order.orderType === 'customer' ? '👤 Customer' : '📥 Shop'}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    async function loadInventorySummary() {
+      try {
+        const response = await fetch('/api/shop-orders/warehouse/shop-inventory', {
+          headers: { 'x-staff-id': localStorage.getItem('staffId') }
+        });
+        const data = await response.json();
+
+        const container = document.getElementById('inventorySummary');
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #7f8c8d;">No shop inventory data</div>';
+          return;
+        }
+
+        const html = data.map(item => `
+          <div class="inventory-item">
+            <div class="shop-name">${item._id.shopName}</div>
+            <div class="item-desc">${item._id.itemName}</div>
+            <div class="qty">${item.totalQuantity} units</div>
+            <div style="font-size: 0.85rem; color: #7f8c8d; margin-top: 0.5rem;">
+              ${item.orders} orders
+            </div>
+          </div>
+        `).join('');
+
+        container.innerHTML = html;
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    function viewOrderDetails(orderId) {
+      const order = allOrders.find(o => o._id === orderId);
+      if (!order) return;
+
+      currentOrderId = orderId;
+
+      document.getElementById('modalShop').textContent = order.shopId?.name || 'Unknown';
+      document.getElementById('modalItem').textContent = order.itemId?.name || 'Unknown';
+      document.getElementById('modalQty').textContent = order.quantity;
+      document.getElementById('modalDays').textContent = order.rentalDays;
+      document.getElementById('modalPrice').textContent = 'Rs' + (order.totalPrice?.toFixed(2) || '0.00');
+      document.getElementById('modalType').textContent = order.orderType === 'customer' ? '👤 Customer Order' : '📥 Shop Order';
+
+      const customerSection = document.getElementById('customerInfoSection');
+      const confirmBtn = document.getElementById('confirmBtn');
+
+      if (order.orderType === 'customer' && order.customerInfo) {
+        customerSection.style.display = 'block';
+        document.getElementById('modalCustomerName').textContent = order.customerInfo.name || '-';
+        document.getElementById('modalCustomerPhone').textContent = order.customerInfo.phone || '-';
+        document.getElementById('modalCustomerAddress').textContent = order.customerInfo.address || '-';
+      } else {
+        customerSection.style.display = 'none';
+      }
+
+      confirmBtn.style.display = order.status === 'pending' ? 'block' : 'none';
+      document.getElementById('orderModal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('orderModal').classList.remove('show');
+      currentOrderId = null;
+    }
+
+    async function confirmOrder() {
+      if (!currentOrderId) return;
+
+      const confirmBtn = document.getElementById('confirmBtn');
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Confirming...';
+
+      try {
+        const response = await fetch(`/api/shop-orders/${currentOrderId}/confirm`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-staff-id': localStorage.getItem('staffId')
+          },
+          body: JSON.stringify({})
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          showMessage('Order confirmed successfully!', 'success');
+          closeModal();
+          loadDashboard();
+        } else {
+          showError(data);
+        }
+      } catch (error) {
+        showError(error);
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '✅ Confirm Order';
+      }
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('orderModal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    };
+
+    // Inventory Management Functions
+    async function loadAllInventory() {
+      try {
+        const response = await fetch('/api/items');
+        const items = await response.json();
+        displayInventory(items);
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    function displayInventory(items) {
+      const tbody = document.getElementById('inventoryBody');
+      if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No items in inventory</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = items.map(item => `
+        <tr>
+          <td>${item.itemNumber || '-'}</td>
+          <td>${item.name}</td>
+          <td>${item.category || '-'}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span id="price-${item._id}">Rs. ${item.price.toFixed(2)}</span>
+              <input type="number" id="price-input-${item._id}" style="width: 80px; padding: 0.25rem;" value="${item.price}" min="0" step="0.01" style="display: none;">
+              <button onclick="togglePriceEdit('${item._id}')" class="btn-small" style="background: #9b59b6; color: white; border: none; padding: 0.35rem 0.65rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
+                Edit
+              </button>
+              <button onclick="savePrice('${item._id}')" id="save-price-btn-${item._id}" class="btn-small" style="background: #27ae60; color: white; border: none; padding: 0.35rem 0.65rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; display: none;">
+                Save
+              </button>
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span id="qty-${item._id}">${item.quantity}</span>
+              <input type="number" id="qty-input-${item._id}" style="width: 60px; padding: 0.25rem;" value="${item.quantity}" min="0" style="display: none;">
+              <button onclick="toggleQtyEdit('${item._id}')" class="btn-small" style="background: #3498db; color: white; border: none; padding: 0.35rem 0.65rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                Edit
+              </button>
+              <button onclick="saveQty('${item._id}')" id="save-btn-${item._id}" class="btn-small" style="background: #27ae60; color: white; border: none; padding: 0.35rem 0.65rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: none;">
+                Save
+              </button>
+            </div>
+          </td>
+          <td>
+            <button onclick="deleteItem('${item._id}')" class="btn-small" style="background: #e74c3c; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer;">
+              Delete
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleQtyEdit(itemId) {
+      const qtySpan = document.getElementById(`qty-${itemId}`);
+      const qtyInput = document.getElementById(`qty-input-${itemId}`);
+      const editBtn = event.target;
+      const saveBtn = document.getElementById(`save-btn-${itemId}`);
+
+      if (qtyInput.style.display === 'none') {
+        qtySpan.style.display = 'none';
+        qtyInput.style.display = 'inline';
+        editBtn.textContent = 'Cancel';
+        editBtn.style.background = '#95a5a6';
+        saveBtn.style.display = 'inline';
+      } else {
+        qtySpan.style.display = 'inline';
+        qtyInput.style.display = 'none';
+        editBtn.textContent = 'Edit';
+        editBtn.style.background = '#3498db';
+        saveBtn.style.display = 'none';
+      }
+    }
+
+    async function saveQty(itemId) {
+      const newQty = parseInt(document.getElementById(`qty-input-${itemId}`).value);
+
+      if (isNaN(newQty) || newQty < 0) {
+        showMessage('Please enter a valid quantity', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/items/${itemId}/quantity`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-staff-id': localStorage.getItem('staffId')
+          },
+          body: JSON.stringify({ quantity: newQty })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          showMessage('Quantity updated successfully!', 'success');
+          loadAllInventory();
+        } else {
+          showError(data);
+        }
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    function togglePriceEdit(itemId) {
+      const priceSpan = document.getElementById(`price-${itemId}`);
+      const priceInput = document.getElementById(`price-input-${itemId}`);
+      const editBtn = event.target;
+      const saveBtn = document.getElementById(`save-price-btn-${itemId}`);
+
+      if (priceInput.style.display === 'none') {
+        priceSpan.style.display = 'none';
+        priceInput.style.display = 'inline';
+        editBtn.textContent = 'Cancel';
+        editBtn.style.background = '#95a5a6';
+        saveBtn.style.display = 'inline';
+      } else {
+        priceSpan.style.display = 'inline';
+        priceInput.style.display = 'none';
+        editBtn.textContent = 'Edit';
+        editBtn.style.background = '#9b59b6';
+        saveBtn.style.display = 'none';
+      }
+    }
+
+    async function savePrice(itemId) {
+      const newPrice = parseFloat(document.getElementById(`price-input-${itemId}`).value);
+
+      if (isNaN(newPrice) || newPrice < 0) {
+        showMessage('Please enter a valid price', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/items/${itemId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-staff-id': localStorage.getItem('staffId')
+          },
+          body: JSON.stringify({ price: newPrice })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          showMessage('Price updated successfully!', 'success');
+          loadAllInventory();
+        } else {
+          showError(data);
+        }
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    async function addNewItem() {
+      const name = document.getElementById('newItemName').value;
+      const price = parseFloat(document.getElementById('newItemPrice').value);
+      const quantity = parseInt(document.getElementById('newItemQty').value);
+      const category = document.getElementById('newItemCategory').value;
+      const description = document.getElementById('newItemDesc').value;
+      const itemNumber = document.getElementById('newItemNumber').value;
+
+      if (!name || isNaN(price) || isNaN(quantity)) {
+        showMessage('Please fill in all required fields', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/items', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-staff-id': localStorage.getItem('staffId')
+          },
+          body: JSON.stringify({
+            name,
+            price,
+            quantity,
+            category: category || 'General',
+            description: description || '',
+            itemNumber: itemNumber || undefined
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          showMessage('Item added successfully!', 'success');
+          // Clear form
+          document.getElementById('newItemName').value = '';
+          document.getElementById('newItemPrice').value = '';
+          document.getElementById('newItemQty').value = '';
+          document.getElementById('newItemCategory').value = '';
+          document.getElementById('newItemDesc').value = '';
+          document.getElementById('newItemNumber').value = '';
+          loadAllInventory();
+        } else {
+          showError(data);
+        }
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    async function deleteItem(itemId) {
+      if (!confirm('Are you sure you want to delete this item?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/items/${itemId}`, {
+          method: 'DELETE',
+          headers: {
+            'x-staff-id': localStorage.getItem('staffId')
+          }
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          showMessage('Item deleted successfully!', 'success');
+          loadAllInventory();
+        } else {
+          showError(data);
+        }
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    requireWarehouseManager();
+    loadDashboard();
+  </script>
+</body>
+</html>

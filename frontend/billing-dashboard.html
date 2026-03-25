@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing & Credit Management - Rental System</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .billing-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: #fff;
+      padding: 1.25rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border-left: 4px solid #3498db;
+    }
+    .stat-card h4 {
+      margin: 0 0 0.3rem 0;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: #7f8c8d;
+    }
+    .stat-card .num {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    .stat-card.warn { border-left-color: #e67e22; }
+    .stat-card.warn .num { color: #e67e22; }
+    .stat-card.danger { border-left-color: #e74c3c; }
+    .stat-card.danger .num { color: #e74c3c; }
+    .stat-card.success { border-left-color: #27ae60; }
+    .stat-card.success .num { color: #27ae60; }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid #ecf0f1;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 0.7rem 1.25rem;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      color: #7f8c8d;
+      font-size: 0.95rem;
+    }
+    .tab-btn.active { color: #3498db; border-bottom-color: #3498db; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .data-table th {
+      background: #34495e;
+      color: #fff;
+      padding: 0.8rem;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+    .data-table td {
+      padding: 0.75rem 0.8rem;
+      border-bottom: 1px solid #ecf0f1;
+      font-size: 0.9rem;
+    }
+    .data-table tr:hover { background: #f8f9fa; }
+
+    .badge {
+      padding: 0.25rem 0.65rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .badge-issued { background: #fff3cd; color: #856404; }
+    .badge-paid { background: #d5f4e6; color: #27ae60; }
+    .badge-partially_paid { background: #d6eaf8; color: #2471a3; }
+    .badge-overdue { background: #fadbd8; color: #c0392b; }
+    .badge-cancelled { background: #f0f0f0; color: #7f8c8d; }
+    .badge-archived { background: #e8daef; color: #6c3483; }
+    .badge-outstanding { background: #fadbd8; color: #c0392b; }
+    .badge-partial { background: #fdebd0; color: #ca6f1e; }
+    .badge-settled { background: #d5f4e6; color: #27ae60; }
+    .badge-cleared { background: #f0f0f0; color: #7f8c8d; }
+    .badge-draft { background: #f0f0f0; color: #7f8c8d; }
+
+    .btn-xs {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.8rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #fff;
+      margin-right: 0.25rem;
+    }
+    .btn-blue { background: #3498db; }
+    .btn-green { background: #27ae60; }
+    .btn-red { background: #e74c3c; }
+    .btn-orange { background: #e67e22; }
+
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 0.6rem;
+      border: 1px solid #bdc3c7;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    .filter-bar input { flex: 1; min-width: 180px; }
+
+    /* Modal */
+    .modal-bg {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-bg.show { display: flex; }
+    .modal-box {
+      background: #fff;
+      width: 600px;
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    }
+    .modal-head {
+      background: #2c3e50;
+      color: #fff;
+      padding: 1.25rem 1.5rem;
+      border-radius: 10px 10px 0 0;
+    }
+    .modal-head h3 { margin: 0; }
+    .modal-body { padding: 1.5rem; }
+    .modal-foot {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #ecf0f1;
+      text-align: right;
+    }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .form-grid.full { grid-template-columns: 1fr; }
+    .form-grid label { display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem; }
+    .form-grid input, .form-grid select, .form-grid textarea {
+      width: 100%; padding: 0.6rem; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box;
+    }
+
+    .inv-section { margin-bottom: 1rem; }
+    .inv-section h4 { margin: 0 0 0.5rem; color: #34495e; border-bottom: 1px solid #ecf0f1; padding-bottom: 0.4rem; }
+    .inv-row { display: flex; justify-content: space-between; padding: 0.25rem 0; }
+    .inv-row.total { font-weight: bold; font-size: 1.1rem; border-top: 2px solid #2c3e50; padding-top: 0.5rem; margin-top: 0.5rem; }
+    .inv-row.late { color: #e74c3c; }
+
+    .form-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .billing-stats { grid-template-columns: 1fr 1fr; }
+    }
+    @media print {
+      body > *:not(.modal-bg) { display: none !important; }
+      .modal-bg { position: static; background: none; }
+      .modal-box { box-shadow: none; width: 100%; max-width: 100%; }
+      .modal-foot button { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="/" class="brand">🏠 RentalSystem</a>
+      <ul class="nav-links">
+        <li><a href="/shop-dashboard">Shop Dashboard</a></li>
+        <li><a href="/billing-dashboard" style="font-weight:bold;">💰 Billing</a></li>
+        <li><a href="#" onclick="staffLogout(); return false;">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <div id="alert" class="alert"></div>
+
+      <div class="dashboard-header">
+        <h1>💰 Billing & Credit Management</h1>
+        <p>Invoices, payments, credit tracking & financial summaries</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="billing-stats">
+        <div class="stat-card">
+          <h4>Total Revenue</h4>
+          <div class="num" id="statRevenue">Rs. 0</div>
+        </div>
+        <div class="stat-card success">
+          <h4>Collected</h4>
+          <div class="num" id="statCollected">Rs. 0</div>
+        </div>
+        <div class="stat-card warn">
+          <h4>Outstanding</h4>
+          <div class="num" id="statOutstanding">Rs. 0</div>
+        </div>
+        <div class="stat-card danger">
+          <h4>Overdue</h4>
+          <div class="num" id="statOverdue">0</div>
+        </div>
+      </div>
+
+      <!-- Summary row 2 -->
+      <div class="billing-stats" style="margin-top:-0.5rem;">
+        <div class="stat-card">
+          <h4>Total Invoices</h4>
+          <div class="num" id="statInvoices">0</div>
+        </div>
+        <div class="stat-card success">
+          <h4>Today's Collection</h4>
+          <div class="num" id="statDaily">Rs. 0</div>
+        </div>
+        <div class="stat-card">
+          <h4>Monthly Collection</h4>
+          <div class="num" id="statMonthly">Rs. 0</div>
+        </div>
+        <div class="stat-card warn">
+          <h4>Late Fees Collected</h4>
+          <div class="num" id="statLateFees">Rs. 0</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('invoices', this)">📄 Invoices</button>
+        <button class="tab-btn" onclick="switchTab('payments', this)">💵 Payments</button>
+        <button class="tab-btn" onclick="switchTab('credits', this)">📋 Credits</button>
+        <button class="tab-btn" onclick="switchTab('overdue', this)">⚠️ Overdue</button>
+        <button class="tab-btn" onclick="switchTab('generate', this)">➕ Generate Invoice</button>
+        <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ Settings</button>
+      </div>
+
+      <!-- ─── Invoices Tab ─── -->
+      <div id="invoices" class="tab-panel active">
+        <div class="filter-bar">
+          <input type="text" id="invSearch" placeholder="Search by name, phone, invoice #..." onkeyup="loadInvoices()">
+          <select id="invStatus" onchange="loadInvoices()">
+            <option value="">All Statuses</option>
+            <option value="issued">Issued</option>
+            <option value="partially_paid">Partially Paid</option>
+            <option value="paid">Paid</option>
+            <option value="overdue">Overdue</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Customer</th>
+              <th>Item</th>
+              <th>Amount</th>
+              <th>Paid</th>
+              <th>Balance</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="invBody">
+            <tr><td colspan="9" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ─── Payments Tab ─── -->
+      <div id="payments" class="tab-panel">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Payment #</th>
+              <th>Invoice #</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Type</th>
+              <th>Method</th>
+              <th>Date</th>
+              <th>Received By</th>
+            </tr>
+          </thead>
+          <tbody id="payBody">
+            <tr><td colspan="8" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ─── Credits Tab ─── -->
+      <div id="credits" class="tab-panel">
+        <div class="filter-bar">
+          <input type="text" id="credSearch" placeholder="Search customer..." onkeyup="loadCredits()">
+          <select id="credStatus" onchange="loadCredits()">
+            <option value="">All</option>
+            <option value="outstanding">Outstanding</option>
+            <option value="partial">Partial</option>
+            <option value="settled">Settled</option>
+            <option value="cleared">Cleared</option>
+          </select>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Total Owed</th>
+              <th>Paid</th>
+              <th>Balance</th>
+              <th>Status</th>
+              <th>Last Payment</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="credBody">
+            <tr><td colspan="8" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ─── Overdue Tab ─── -->
+      <div id="overdue" class="tab-panel">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Customer</th>
+              <th>Item</th>
+              <th>Due Date</th>
+              <th>Days Overdue</th>
+              <th>Balance</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="overdueBody">
+            <tr><td colspan="7" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ─── Generate Invoice Tab ─── -->
+      <div id="generate" class="tab-panel">
+        <div class="form-section">
+          <h3>Generate Invoice from Rental Order</h3>
+          <p style="color:#7f8c8d; margin-bottom:1rem;">Select a closed or active rental to generate its billing invoice.</p>
+          <div class="form-grid full">
+            <div>
+              <label>Select Rental Order</label>
+              <select id="genRentalId" onchange="previewRentalForInvoice()">
+                <option value="">-- Select Order --</option>
+              </select>
+            </div>
+          </div>
+          <div id="genPreview" style="display:none; margin-top:1rem; padding:1rem; background:#f8f9fa; border-radius:6px;"></div>
+          <div class="form-grid" style="margin-top:1rem;">
+            <div>
+              <label>Discount (Rs.)</label>
+              <input type="number" id="genDiscount" value="0" min="0" step="0.01">
+            </div>
+            <div style="display:flex; align-items:flex-end;">
+              <button onclick="generateInvoice()" class="btn success" style="width:100%;">📄 Generate Invoice</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Settings Tab ─── -->
+      <div id="settings" class="tab-panel">
+        <div class="form-section">
+          <h3>⚙️ Billing Settings</h3>
+          <div class="form-grid">
+            <div>
+              <label>Late Fee Extra % (per overdue day)</label>
+              <input type="number" id="setLateFee" value="0" min="0" step="1" placeholder="e.g. 10 for 10% extra">
+              <small style="color:#7f8c8d;">0 = charge regular daily rate for overdue days</small>
+            </div>
+            <div>
+              <label>Return Deadline Hour (24h)</label>
+              <input type="number" id="setDeadlineHour" value="9" min="0" max="23">
+              <small style="color:#7f8c8d;">Default: 9 (9:00 AM)</small>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div>
+              <label>Archive Records After (days)</label>
+              <input type="number" id="setArchiveDays" value="365" min="30">
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:0.5rem;">
+              <button onclick="saveSettings()" class="btn" style="flex:1;">💾 Save Settings</button>
+              <button onclick="archiveRecords()" class="btn btn-orange" style="flex:1; background:#e67e22;">🗄️ Archive Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ─── Invoice Detail Modal ─── -->
+  <div class="modal-bg" id="invoiceModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>🧾 Invoice Details</h3>
+      </div>
+      <div class="modal-body" id="invoiceModalBody"></div>
+      <div class="modal-foot">
+        <button class="btn-xs btn-blue" onclick="window.print()">🖨️ Print</button>
+        <button class="btn-xs" style="background:#95a5a6;" onclick="closeModal('invoiceModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Record Payment Modal ─── -->
+  <div class="modal-bg" id="paymentModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>💵 Record Payment</h3>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="payInvoiceId">
+        <div id="payInfo" style="margin-bottom:1rem; padding:0.75rem; background:#f8f9fa; border-radius:6px;"></div>
+        <div class="form-grid">
+          <div>
+            <label>Amount (Rs.)</label>
+            <input type="number" id="payAmount" min="0" step="0.01">
+          </div>
+          <div>
+            <label>Payment Method</label>
+            <select id="payMethod">
+              <option value="cash">Cash</option>
+              <option value="card">Card</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid full">
+          <div>
+            <label>Notes</label>
+            <input type="text" id="payNotes" placeholder="Optional notes">
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-xs btn-green" onclick="submitPayment()">✅ Record Payment</button>
+        <button class="btn-xs" style="background:#95a5a6;" onclick="closeModal('paymentModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Edit Invoice Modal ─── -->
+  <div class="modal-bg" id="editInvModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>✏️ Edit Invoice</h3>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editInvId">
+        <div class="form-grid">
+          <div>
+            <label>Discount (Rs.)</label>
+            <input type="number" id="editDiscount" min="0" step="0.01">
+          </div>
+          <div>
+            <label>Agreed Days</label>
+            <input type="number" id="editDays" min="1">
+          </div>
+        </div>
+        <div class="form-grid full">
+          <div>
+            <label>Notes</label>
+            <textarea id="editNotes" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-xs btn-blue" onclick="submitEditInvoice()">💾 Save</button>
+        <button class="btn-xs" style="background:#95a5a6;" onclick="closeModal('editInvModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/utils.js"></script>
+  <script>
+    const staffHeaders = () => ({ 'Content-Type': 'application/json', 'x-staff-id': localStorage.getItem('staffId') });
+    let rentalsCache = [];
+
+    // ─── Init ────────────────────────────────────────────────
+    function init() {
+      if (!isStaffLoggedIn()) { window.location.href = '/staff-login'; return; }
+      loadSummary();
+      loadInvoices();
+      loadPayments();
+      loadCredits();
+      loadOverdue();
+      loadRentalsForGenerate();
+      loadSettings();
+    }
+
+    // ─── Tab switching ───────────────────────────────────────
+    function switchTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+    // ─── Summary ─────────────────────────────────────────────
+    async function loadSummary() {
+      try {
+        const r = await fetch('/api/billing/summary', { headers: staffHeaders() });
+        const d = await r.json();
+        document.getElementById('statRevenue').textContent = 'Rs. ' + (d.totals.totalRevenue || 0).toFixed(2);
+        document.getElementById('statCollected').textContent = 'Rs. ' + (d.totals.totalCollected || 0).toFixed(2);
+        document.getElementById('statOutstanding').textContent = 'Rs. ' + (d.totals.totalOutstanding || 0).toFixed(2);
+        document.getElementById('statOverdue').textContent = d.overdueCount || 0;
+        document.getElementById('statInvoices').textContent = d.totals.totalInvoices || 0;
+        document.getElementById('statDaily').textContent = 'Rs. ' + (d.daily.dailyCollection || 0).toFixed(2);
+        document.getElementById('statMonthly').textContent = 'Rs. ' + (d.monthly.monthlyCollection || 0).toFixed(2);
+        document.getElementById('statLateFees').textContent = 'Rs. ' + (d.totals.totalLateFees || 0).toFixed(2);
+      } catch (e) { console.error(e); }
+    }
+
+    // ─── Invoices ────────────────────────────────────────────
+    async function loadInvoices() {
+      try {
+        const search = document.getElementById('invSearch').value;
+        const status = document.getElementById('invStatus').value;
+        let url = '/api/billing/invoices?';
+        if (search) url += 'search=' + encodeURIComponent(search) + '&';
+        if (status) url += 'status=' + status;
+        const r = await fetch(url, { headers: staffHeaders() });
+        const invoices = await r.json();
+        const tbody = document.getElementById('invBody');
+        if (!invoices.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center">No invoices found</td></tr>'; return; }
+        tbody.innerHTML = invoices.map(inv => `
+          <tr>
+            <td style="font-size:0.8rem;">${inv.invoiceNumber}</td>
+            <td>${inv.customerName || '-'}</td>
+            <td>${inv.itemName || '-'}</td>
+            <td>Rs. ${inv.totalAmount.toFixed(2)}</td>
+            <td>Rs. ${inv.amountPaid.toFixed(2)}</td>
+            <td style="font-weight:bold; color:${inv.balanceDue > 0 ? '#e74c3c' : '#27ae60'};">Rs. ${inv.balanceDue.toFixed(2)}</td>
+            <td><span class="badge badge-${inv.status}">${inv.status.replace('_', ' ')}</span></td>
+            <td>${new Date(inv.createdAt).toLocaleDateString()}</td>
+            <td style="white-space:nowrap;">
+              <button class="btn-xs btn-blue" onclick="viewInvoice('${inv._id}')">📄</button>
+              ${!['paid','cancelled','archived'].includes(inv.status) ? `
+                <button class="btn-xs btn-green" onclick="openPaymentModal('${inv._id}', ${inv.balanceDue.toFixed(2)}, '${inv.invoiceNumber}', '${inv.customerName || ''}')">💵</button>
+                <button class="btn-xs btn-orange" onclick="openEditInvoice('${inv._id}', ${inv.discount}, ${inv.agreedDays}, '${(inv.notes||'').replace(/'/g,"\\'")}')">✏️</button>
+                <button class="btn-xs btn-red" onclick="cancelInvoice('${inv._id}')">❌</button>
+              ` : ''}
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    // ─── View Invoice Detail ─────────────────────────────────
+    async function viewInvoice(id) {
+      try {
+        const r = await fetch('/api/billing/invoices/' + id, { headers: staffHeaders() });
+        const inv = await r.json();
+        const isLate = (inv.actualDays || inv.agreedDays) > inv.agreedDays;
+        const extraDays = Math.max(0, (inv.actualDays || 0) - inv.agreedDays);
+        document.getElementById('invoiceModalBody').innerHTML = `
+          <div style="text-align:center; margin-bottom:1rem;">
+            <strong style="font-size:1.2rem;">${inv.invoiceNumber}</strong><br>
+            <span class="badge badge-${inv.status}">${inv.status.replace('_',' ').toUpperCase()}</span>
+          </div>
+          <div class="inv-section">
+            <h4>Customer</h4>
+            <div class="inv-row"><span>Name:</span><span>${inv.customerName || '-'}</span></div>
+            <div class="inv-row"><span>Phone:</span><span>${inv.customerPhone || '-'}</span></div>
+            <div class="inv-row"><span>Address:</span><span>${inv.customerAddress || '-'}</span></div>
+          </div>
+          <div class="inv-section">
+            <h4>Rental Details</h4>
+            <div class="inv-row"><span>Item:</span><span>${inv.itemName} (${inv.itemCategory || 'General'})</span></div>
+            <div class="inv-row"><span>Price/Day:</span><span>Rs. ${inv.pricePerDay.toFixed(2)}</span></div>
+            <div class="inv-row"><span>Quantity:</span><span>${inv.quantity}</span></div>
+            <div class="inv-row"><span>Agreed Days:</span><span>${inv.agreedDays}</span></div>
+            ${inv.actualDays ? `<div class="inv-row ${isLate ? 'late' : ''}"><span>Actual Days:</span><span>${inv.actualDays}${isLate ? ' ⚠️ OVERDUE' : ''}</span></div>` : ''}
+            <div class="inv-row"><span>Start:</span><span>${new Date(inv.startDate).toLocaleDateString()}</span></div>
+            <div class="inv-row"><span>End:</span><span>${new Date(inv.endDate).toLocaleDateString()}</span></div>
+            ${inv.returnDate ? `<div class="inv-row"><span>Returned:</span><span>${new Date(inv.returnDate).toLocaleString()}</span></div>` : ''}
+          </div>
+          <div class="inv-section">
+            <h4>Financial Breakdown</h4>
+            <div class="inv-row"><span>Rental Charge (${inv.agreedDays} days):</span><span>Rs. ${inv.rentalCharge.toFixed(2)}</span></div>
+            ${inv.lateFee > 0 ? `<div class="inv-row late"><span>Late Fee (${extraDays} extra day${extraDays>1?'s':''}):</span><span>Rs. ${inv.lateFee.toFixed(2)}</span></div>` : ''}
+            ${inv.discount > 0 ? `<div class="inv-row" style="color:#27ae60;"><span>Discount:</span><span>- Rs. ${inv.discount.toFixed(2)}</span></div>` : ''}
+            <div class="inv-row total"><span>Total Amount:</span><span>Rs. ${inv.totalAmount.toFixed(2)}</span></div>
+            <div class="inv-row" style="color:#27ae60;"><span>Advance Paid:</span><span>Rs. ${inv.advancePaid.toFixed(2)}</span></div>
+            <div class="inv-row" style="color:#3498db;"><span>Total Paid:</span><span>Rs. ${inv.amountPaid.toFixed(2)}</span></div>
+            <div class="inv-row total"><span>Balance Due:</span><span style="color:${inv.balanceDue > 0 ? '#e74c3c' : '#27ae60'};">Rs. ${inv.balanceDue.toFixed(2)}</span></div>
+          </div>
+        `;
+        document.getElementById('invoiceModal').classList.add('show');
+      } catch (e) { showError(e); }
+    }
+
+    // Payments 
+    async function loadPayments() {
+      try {
+        const r = await fetch('/api/billing/payments', { headers: staffHeaders() });
+        const payments = await r.json();
+        const tbody = document.getElementById('payBody');
+        if (!payments.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center">No payments</td></tr>'; return; }
+        tbody.innerHTML = payments.map(p => `
+          <tr>
+            <td style="font-size:0.8rem;">${p.paymentNumber}</td>
+            <td style="font-size:0.8rem;">${p.invoiceId?.invoiceNumber || '-'}</td>
+            <td>${p.customerName || '-'}</td>
+            <td style="font-weight:bold; color:#27ae60;">Rs. ${p.amount.toFixed(2)}</td>
+            <td><span class="badge badge-${p.paymentType === 'advance' ? 'partial' : 'paid'}">${p.paymentType}</span></td>
+            <td>${p.paymentMethod}</td>
+            <td>${new Date(p.createdAt).toLocaleString()}</td>
+            <td>${p.receivedBy?.name || '-'}</td>
+          </tr>
+        `).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    // Credits 
+    async function loadCredits() {
+      try {
+        const search = document.getElementById('credSearch').value;
+        const status = document.getElementById('credStatus').value;
+        let url = '/api/billing/credits?';
+        if (search) url += 'search=' + encodeURIComponent(search) + '&';
+        if (status) url += 'status=' + status;
+        const r = await fetch(url, { headers: staffHeaders() });
+        const credits = await r.json();
+        const tbody = document.getElementById('credBody');
+        if (!credits.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center">No credit records</td></tr>'; return; }
+        tbody.innerHTML = credits.map(c => `
+          <tr>
+            <td>${c.customerName}</td>
+            <td>${c.customerPhone || '-'}</td>
+            <td>Rs. ${c.totalOwed.toFixed(2)}</td>
+            <td>Rs. ${c.totalPaid.toFixed(2)}</td>
+            <td style="font-weight:bold; color:${c.balance > 0 ? '#e74c3c' : '#27ae60'};">Rs. ${c.balance.toFixed(2)}</td>
+            <td><span class="badge badge-${c.status}">${c.status}</span></td>
+            <td>${c.lastPaymentDate ? new Date(c.lastPaymentDate).toLocaleDateString() : '-'}</td>
+            <td>
+              ${c.status === 'settled' ? `<button class="btn-xs btn-green" onclick="clearCredit('${c._id}')">✅ Clear</button>` : ''}
+              ${['outstanding','partial'].includes(c.status) ? `<button class="btn-xs btn-green" onclick="markCreditPaid('${c._id}')">💰 Mark as Paid</button>` : ''}
+              ${['outstanding','partial'].includes(c.status) && c.invoiceId ? `<button class="btn-xs btn-blue" onclick="viewInvoice('${c.invoiceId._id || c.invoiceId}')">📄</button>` : ''}
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    //  Overdue 
+    async function loadOverdue() {
+      try {
+        const r = await fetch('/api/billing/overdue', { headers: staffHeaders() });
+        const items = await r.json();
+        const tbody = document.getElementById('overdueBody');
+        if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center">No overdue invoices 🎉</td></tr>'; return; }
+        const now = new Date();
+        tbody.innerHTML = items.map(inv => {
+          const daysOver = Math.ceil((now - new Date(inv.endDate)) / 86400000);
+          return `
+          <tr>
+            <td style="font-size:0.8rem;">${inv.invoiceNumber}</td>
+            <td>${inv.customerName || '-'}</td>
+            <td>${inv.itemName || '-'}</td>
+            <td>${new Date(inv.endDate).toLocaleDateString()}</td>
+            <td style="color:#e74c3c; font-weight:bold;">${daysOver} day${daysOver > 1 ? 's' : ''}</td>
+            <td style="font-weight:bold;">Rs. ${inv.balanceDue.toFixed(2)}</td>
+            <td>
+              <button class="btn-xs btn-orange" onclick="recalcLateFee('${inv._id}')">🔄 Recalc</button>
+              <button class="btn-xs btn-green" onclick="openPaymentModal('${inv._id}', ${inv.balanceDue.toFixed(2)}, '${inv.invoiceNumber}', '${inv.customerName || ''}')">💵 Pay</button>
+            </td>
+          </tr>`;
+        }).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    //Generate Invoice 
+    async function loadRentalsForGenerate() {
+      try {
+        const r = await fetch('/api/shop-orders/shop/my-orders', { headers: staffHeaders() });
+        rentalsCache = await r.json();
+        const sel = document.getElementById('genRentalId');
+        sel.innerHTML = '<option value="">-- Select Order --</option>' +
+          rentalsCache.map(o => {
+            const cust = o.customerInfo?.name || 'N/A';
+            const item = o.itemId?.name || 'N/A';
+            return `<option value="${o._id}">[${o.status}] ${item} - ${cust} (${o.rentalDays}d)</option>`;
+          }).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    function previewRentalForInvoice() {
+      const id = document.getElementById('genRentalId').value;
+      const preview = document.getElementById('genPreview');
+      if (!id) { preview.style.display = 'none'; return; }
+      const o = rentalsCache.find(r => r._id === id);
+      if (!o) return;
+      const price = o.itemId?.price || 0;
+      const charge = price * o.quantity * o.rentalDays;
+      const adv = o.advancePayment || 0;
+      preview.style.display = 'block';
+      preview.innerHTML = `
+        <strong>${o.itemId?.name}</strong> | Customer: ${o.customerInfo?.name || 'N/A'}<br>
+        Price/Day: Rs. ${price.toFixed(2)} | Qty: ${o.quantity} | Days: ${o.rentalDays}<br>
+        Rental Charge: <strong>Rs. ${charge.toFixed(2)}</strong> | Advance: Rs. ${adv.toFixed(2)}<br>
+        Status: <span class="badge badge-${o.status === 'closed' ? 'paid' : 'issued'}">${o.status}</span>
+        ${o.status === 'closed' && o.actualDays > o.rentalDays ? `<br><span style="color:#e74c3c;">⚠️ Overdue: ${o.actualDays - o.rentalDays} extra day(s)</span>` : ''}
+      `;
+    }
+
+    async function generateInvoice() {
+      const rentalId = document.getElementById('genRentalId').value;
+      if (!rentalId) { showMessage('Select a rental order', 'error'); return; }
+      try {
+        const r = await fetch('/api/billing/generate-invoice/' + rentalId, {
+          method: 'POST',
+          headers: staffHeaders(),
+          body: JSON.stringify({ discount: parseFloat(document.getElementById('genDiscount').value) || 0 })
+        });
+        const d = await r.json();
+        if (r.ok) {
+          showMessage(d.message || 'Invoice generated!', 'success');
+          refresh();
+          viewInvoice(d.invoice._id);
+        } else {
+          showError(d);
+        }
+      } catch (e) { showError(e); }
+    }
+
+    // ─── Payment Modal ───────────────────────────────────────
+    function openPaymentModal(invoiceId, balance, invNum, custName) {
+      document.getElementById('payInvoiceId').value = invoiceId;
+      document.getElementById('payAmount').value = balance;
+      document.getElementById('payInfo').innerHTML = `Invoice: <strong>${invNum}</strong> | Customer: ${custName} | Balance: <strong style="color:#e74c3c;">Rs. ${parseFloat(balance).toFixed(2)}</strong>`;
+      document.getElementById('payNotes').value = '';
+      document.getElementById('paymentModal').classList.add('show');
+    }
+
+    async function submitPayment() {
+      const invoiceId = document.getElementById('payInvoiceId').value;
+      const amount = parseFloat(document.getElementById('payAmount').value);
+      if (!amount || amount <= 0) { showMessage('Enter a valid amount', 'error'); return; }
+      try {
+        const r = await fetch('/api/billing/record-payment/' + invoiceId, {
+          method: 'POST',
+          headers: staffHeaders(),
+          body: JSON.stringify({
+            amount,
+            paymentMethod: document.getElementById('payMethod').value,
+            notes: document.getElementById('payNotes').value,
+          })
+        });
+        const d = await r.json();
+        if (r.ok) {
+          showMessage('Payment recorded!', 'success');
+          closeModal('paymentModal');
+          refresh();
+        } else { showError(d); }
+      } catch (e) { showError(e); }
+    }
+
+    // ─── Edit Invoice ────────────────────────────────────────
+    function openEditInvoice(id, discount, days, notes) {
+      document.getElementById('editInvId').value = id;
+      document.getElementById('editDiscount').value = discount || 0;
+      document.getElementById('editDays').value = days;
+      document.getElementById('editNotes').value = notes || '';
+      document.getElementById('editInvModal').classList.add('show');
+    }
+
+    async function submitEditInvoice() {
+      const id = document.getElementById('editInvId').value;
+      try {
+        const r = await fetch('/api/billing/invoices/' + id, {
+          method: 'PUT',
+          headers: staffHeaders(),
+          body: JSON.stringify({
+            discount: parseFloat(document.getElementById('editDiscount').value) || 0,
+            agreedDays: parseInt(document.getElementById('editDays').value),
+            notes: document.getElementById('editNotes').value,
+          })
+        });
+        const d = await r.json();
+        if (r.ok) {
+          showMessage('Invoice updated!', 'success');
+          closeModal('editInvModal');
+          refresh();
+        } else { showError(d); }
+      } catch (e) { showError(e); }
+    }
+
+    // ─── Cancel Invoice ──────────────────────────────────────
+    async function cancelInvoice(id) {
+      const reason = prompt('Reason for cancellation:');
+      if (reason === null) return;
+      try {
+        const r = await fetch('/api/billing/invoices/' + id + '/cancel', {
+          method: 'PUT',
+          headers: staffHeaders(),
+          body: JSON.stringify({ reason })
+        });
+        const d = await r.json();
+        if (r.ok) { showMessage('Invoice cancelled', 'success'); refresh(); }
+        else { showError(d); }
+      } catch (e) { showError(e); }
+    }
+
+    // ─── Recalc Late Fee ─────────────────────────────────────
+    async function recalcLateFee(id) {
+      try {
+        const r = await fetch('/api/billing/recalculate-late-fee/' + id, {
+          method: 'PUT', headers: staffHeaders()
+        });
+        const d = await r.json();
+        if (r.ok) { showMessage('Late fee recalculated', 'success'); refresh(); }
+        else { showError(d); }
+      } catch (e) { showError(e); }
+    }
+
+    // ─── Mark Credit as Paid ─────────────────────────────────
+    async function markCreditPaid(id) {
+      if (!confirm('Mark this credit as fully paid?')) return;
+      try {
+        const r = await fetch('/api/billing/credits/' + id + '/mark-paid', {
+          method: 'PUT',
+          headers: { ...staffHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentMethod: 'cash' })
+        });
+        const d = await r.json();
+        if (r.ok) { showMessage('Credit marked as paid', 'success'); refresh(); }
+        else { showError(d); }
+      } catch (e) { showError(e); }
+    }
+
+    // ─── Clear Credit ────────────────────────────────────────
+    async function clearCredit(id) {
+      if (!confirm('Clear this settled credit record?')) return;
+      try {
+        const r = await fetch('/api/billing/credits/' + id + '/clear', {
+          method: 'PUT', headers: staffHeaders()
+        });
+        const d = await r.json();
+        if (r.ok) { showMessage('Credit cleared', 'success'); refresh(); }
+        else { showError(d); }
+      } catch (e) { showError(e); }
+    }
+
+    // ─── Settings ────────────────────────────────────────────
+    async function loadSettings() {
+      try {
+        const r = await fetch('/api/billing/settings', { headers: staffHeaders() });
+        const s = await r.json();
+        document.getElementById('setLateFee').value = s.lateFeePercentage || 0;
+        document.getElementById('setDeadlineHour').value = s.returnDeadlineHour ?? 9;
+        document.getElementById('setArchiveDays').value = s.archiveAfterDays || 365;
+      } catch (e) { console.error(e); }
+    }
+
+    async function saveSettings() {
+      try {
+        const r = await fetch('/api/billing/settings', {
+          method: 'PUT',
+          headers: staffHeaders(),
+          body: JSON.stringify({
+            lateFeePercentage: parseFloat(document.getElementById('setLateFee').value) || 0,
+            returnDeadlineHour: parseInt(document.getElementById('setDeadlineHour').value) || 9,
+            archiveAfterDays: parseInt(document.getElementById('setArchiveDays').value) || 365,
+          })
+        });
+        if (r.ok) showMessage('Settings saved!', 'success');
+      } catch (e) { showError(e); }
+    }
+
+    async function archiveRecords() {
+      if (!confirm('Archive all paid invoices older than the configured retention period?')) return;
+      try {
+        const r = await fetch('/api/billing/archive', { method: 'POST', headers: staffHeaders() });
+        const d = await r.json();
+        if (r.ok) { showMessage(d.message, 'success'); refresh(); }
+        else { showError(d); }
+      } catch (e) { showError(e); }
+    }
+
+    // ─── Refresh all ─────────────────────────────────────────
+    function refresh() {
+      loadSummary();
+      loadInvoices();
+      loadPayments();
+      loadCredits();
+      loadOverdue();
+      loadRentalsForGenerate();
+    }
+
+    init();
+  </script>
+</body>
+</html>

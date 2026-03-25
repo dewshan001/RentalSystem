@@ -1,0 +1,21 @@
+{
+  "name": "rental-minimal-starter",
+  "version": "1.0.0",
+  "description": "Minimal app: MongoDB connection + index page on port 3000",
+  "private": true,
+  "scripts": {
+    "dev": "node backend/server.js",
+    "start": "node backend/server.js",
+    "seed": "node seed.js",
+    "create-collections": "node create-collections.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^9.1.5"
+  }
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - RentalSystem</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="auth-page">
+  <!-- Animated Background Shapes -->
+  <div class="glass-shape glass-shape-1"></div>
+  <div class="glass-shape glass-shape-2"></div>
+
+  <nav>
+    <div class="container">
+      <a href="/" class="brand">🏠 RentalSystem</a>
+      <ul class="nav-links">
+        <li><a href="/register">Register</a></li>
+        <li><a href="/login">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <div id="alert" class="alert" style="display: none; width: 100%; max-width: 450px; margin: 0 auto 1.5rem;"></div>
+
+      <div class="glass-panel">
+        <h1 class="text-center mb-4">Welcome Back</h1>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" class="glass-input" placeholder="Enter your email" required>
+            <small id="emailError" style="color: #e74c3c; display: none; margin-top: 5px; font-weight: 500;"></small>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" class="glass-input" placeholder="Enter your password" required>
+          </div>
+
+          <button type="submit" class="glass-btn w-100">Sign In</button>
+
+          <p class="auth-links mt-3">
+            Don't have an account? <a href="/register">Create one</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="/utils.js"></script>
+  <script>
+    const emailInput = document.getElementById('email');
+    const emailError = document.getElementById('emailError');
+
+    // Real-time email validation
+    emailInput.addEventListener('input', (e) => {
+      const email = e.target.value;
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (email.length > 0 && !re.test(email)) {
+        emailError.textContent = 'Please enter a valid email address';
+        emailError.style.display = 'block';
+      } else {
+        emailError.style.display = 'none';
+      }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = emailInput.value;
+      const password = document.getElementById('password').value;
+      
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRe.test(email)) {
+        showMessage('Invalid email address', 'error');
+        return;
+      }
+
+      try {
+        const response = await login(email, password);
+        setUserId(response.userId);
+        showMessage('Login successful! Redirecting to dashboard...', 'success');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1500);
+      } catch (error) {
+        showError(error);
+      }
+    });
+  </script>
+</body>
+</html>

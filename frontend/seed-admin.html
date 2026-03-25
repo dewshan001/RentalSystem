@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed Database - RentalSystem Admin</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .admin-container {
+      max-width: 600px;
+      margin: 4rem auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .seed-section {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      border: 2px dashed #3498db;
+      border-radius: 6px;
+      background: #ecf0f1;
+    }
+    .admin-key-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #bdc3c7;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+      font-family: monospace;
+    }
+    .seed-button {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: bold;
+    }
+    .status-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 4px;
+      display: none;
+    }
+    .status-box.success {
+      background: #d5f4e6;
+      color: #27ae60;
+      border: 1px solid #27ae60;
+      display: block;
+    }
+    .status-box.error {
+      background: #fadbd8;
+      color: #e74c3c;
+      border: 1px solid #e74c3c;
+      display: block;
+    }
+    .status-box.info {
+      background: #d6eaf8;
+      color: #3498db;
+      border: 1px solid #3498db;
+      display: block;
+    }
+    .item-list {
+      margin-top: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      background: white;
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    .item-row {
+      padding: 0.5rem;
+      border-bottom: 1px solid #ecf0f1;
+      font-size: 0.9rem;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .stat-card {
+      background: white;
+      padding: 1rem;
+      border-radius: 4px;
+      border-left: 4px solid #3498db;
+    }
+    .stat-card strong {
+      display: block;
+      font-size: 1.5rem;
+      color: #3498db;
+    }
+    .stat-card small {
+      color: #7f8c8d;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="/" class="brand">🏠 RentalSystem</a>
+      <ul class="nav-links">
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li><a href="/">Home</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="admin-container">
+      <h1>🔧 Database Seed Admin</h1>
+      <p style="color: #7f8c8d; margin-bottom: 2rem;">Seed the database with initial tool inventory (28 items)</p>
+
+      <!-- Database Status Section -->
+      <div class="seed-section">
+        <h2>Database Status</h2>
+        <button onclick="checkStatus()" class="btn" style="width: 100%;">Check Database Status</button>
+        <div id="statusDisplay" class="status-box"></div>
+        <div id="troubleshoot" style="display: none; margin-top: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
+          <h4 style="color: #856404; margin-top: 0;">MongoDB Connection Troubleshooting</h4>
+          <ol style="color: #856404; font-size: 0.9rem;">
+            <li><strong>Check MongoDB Atlas Status:</strong>
+              <ul>
+                <li>Visit <a href="https://cloud.mongodb.com" target="_blank" style="color: #0066cc;">MongoDB Atlas</a></li>
+                <li>Ensure your cluster is <strong>ACTIVE</strong> (not paused)</li>
+              </ul>
+            </li>
+            <li><strong>Verify Network Access:</strong>
+              <ul>
+                <li>Go to Security → Network Access</li>
+                <li>Add your current IP address or use <code style="background: #fff;">0.0.0.0/0</code> (allow all)</li>
+              </ul>
+            </li>
+            <li><strong>Check Connection String:</strong>
+              <ul>
+                <li>Ensure <code style="background: #fff;">MONGO_URI</code> in <code style="background: #fff;">.env</code> is correct</li>
+                <li>Verify username and password are correct</li>
+              </ul>
+            </li>
+            <li><strong>Restart Server:</strong>
+              <ul>
+                <li>Stop the server (Ctrl+C)</li>
+                <li>Run: <code style="background: #fff;">npm start</code></li>
+              </ul>
+            </li>
+          </ol>
+        </div>
+        <div id="statsDisplay" class="stats" style="display: none;">
+          <div class="stat-card">
+            <small>Items in Database</small>
+            <strong id="itemCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <small>Total Categories</small>
+            <strong id="categoryCount">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Seed Items Section -->
+      <div class="seed-section">
+        <h2>Seed Items</h2>
+        <p style="font-size: 0.9rem; color: #7f8c8d; margin-bottom: 1rem;">
+          Enter the admin key to seed the database with 28 tools
+        </p>
+        <input 
+          type="password" 
+          id="adminKey" 
+          class="admin-key-input" 
+          placeholder="Enter admin key"
+          value="SEED_ADMIN_2024"
+        >
+        <button onclick="seedDatabase()" class="btn seed-button">
+          🌱 Seed Database
+        </button>
+        <div id="seedStatus" class="status-box"></div>
+        <div id="seedNote" style="margin-top: 1rem; padding: 1rem; background: #e8f4f8; border: 1px solid #3498db; border-radius: 4px; font-size: 0.9rem; color: #2c3e50; display: none;">
+          <strong>ℹ️ Note:</strong> MongoDB must be connected to seed the database. 
+          <br><br>
+          <strong>Quick Setup:</strong>
+          <ol style="margin: 0.5rem 0; padding-left: 1.5rem;">
+            <li>Visit <a href="https://cloud.mongodb.com" target="_blank" style="color: #0066cc; text-decoration: underline;">MongoDB Atlas</a></li>
+            <li>Make sure your cluster is <strong>Active</strong></li>
+            <li>Add your IP to Network Access: Security → Network Access → Add IP Address</li>
+            <li>Use <strong>0.0.0.0/0</strong> to allow all connections (dev only)</li>
+            <li>Restart this server: Stop (Ctrl+C) and run <code style="background: white; padding: 2px 4px;">npm start</code></li>
+            <li>Come back and click "Check Database Status" again</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Items Preview Section -->
+      <div class="seed-section">
+        <h2>Items to be Seeded (28 items)</h2>
+        <div id="itemsList" class="item-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Items preview data
+    const seedItems = [
+      { itemNumber: 1, name: 'Angle Grinder 4"', category: 'Grinders', quantity: 10, price: 15 },
+      { itemNumber: 2, name: 'Angle Grinder 4-1/2"', category: 'Grinders', quantity: 10, price: 18 },
+      { itemNumber: 3, name: 'Angle Grinder 7"', category: 'Grinders', quantity: 5, price: 22 },
+      { itemNumber: 4, name: 'Angle Grinder 7"', category: 'Grinders', quantity: 3, price: 22 },
+      { itemNumber: 5, name: 'Drill Machine', category: 'Drills', quantity: 15, price: 20 },
+      { itemNumber: 6, name: 'Rechargeable Drill', category: 'Drills', quantity: 3, price: 25 },
+      { itemNumber: 7, name: 'Hiltty (Hammer Drill)', category: 'Drills', quantity: 15, price: 28 },
+      { itemNumber: 8, name: 'Breaker 5 KG', category: 'Breaking Tools', quantity: 10, price: 30 },
+      { itemNumber: 9, name: 'Demolizer', category: 'Breaking Tools', quantity: 5, price: 35 },
+      { itemNumber: 10, name: 'Putty Mixer', category: 'Mixers', quantity: 10, price: 18 },
+      { itemNumber: 11, name: 'Circular Saw', category: 'Saws', quantity: 10, price: 20 },
+      { itemNumber: 12, name: 'Marble Cutter', category: 'Saws', quantity: 5, price: 40 },
+      { itemNumber: 13, name: 'Sander 4"', category: 'Finishing', quantity: 3, price: 22 },
+      { itemNumber: 14, name: 'Sander', category: 'Finishing', quantity: 5, price: 20 },
+      { itemNumber: 15, name: 'Orbital Sander', category: 'Finishing', quantity: 3, price: 25 },
+      { itemNumber: 16, name: 'Mitre Saw', category: 'Saws', quantity: 4, price: 32 },
+      { itemNumber: 17, name: 'Cut-off Saw', category: 'Saws', quantity: 5, price: 30 },
+      { itemNumber: 18, name: 'Jig Saw', category: 'Saws', quantity: 5, price: 22 },
+      { itemNumber: 19, name: 'Chain Saw', category: 'Saws', quantity: 3, price: 35 },
+      { itemNumber: 20, name: 'Router', category: 'Power Tools', quantity: 2, price: 28 },
+      { itemNumber: 21, name: 'Planer', category: 'Power Tools', quantity: 3, price: 32 },
+      { itemNumber: 22, name: 'Electric Poker', category: 'Concrete Tools', quantity: 5, price: 18 },
+      { itemNumber: 23, name: 'Blower', category: 'Cleaning Equipment', quantity: 5, price: 12 },
+      { itemNumber: 24, name: 'High Pressure Washer Small', category: 'Cleaning Equipment', quantity: 9, price: 20 },
+      { itemNumber: 25, name: 'Air Compressor', category: 'Cleaning Equipment', quantity: 20, price: 30 },
+      { itemNumber: 26, name: 'Arc Welding Plant', category: 'Welding', quantity: 15, price: 85 },
+      { itemNumber: 27, name: 'Mig Welding Plant', category: 'Welding', quantity: 3, price: 95 },
+      { itemNumber: 28, name: 'Tig Welding Plant', category: 'Welding', quantity: 3, price: 120 },
+    ];
+
+    function displayItemsList() {
+      const listHtml = seedItems.map(item => 
+        `<div class="item-row">
+          <strong>#${item.itemNumber}</strong> - ${item.name} 
+          <span style="color: #7f8c8d;">(${item.category}, Qty: ${item.quantity}, Rs${item.price}/day)</span>
+        </div>`
+      ).join('');
+      document.getElementById('itemsList').innerHTML = listHtml;
+    }
+
+    async function checkStatus() {
+      try {
+        const response = await fetch('/api/seed/status');
+        const data = await response.json();
+        
+        const statusDiv = document.getElementById('statusDisplay');
+        const statsDiv = document.getElementById('statsDisplay');
+        const itemCount = document.getElementById('itemCount');
+        const categoryCount = document.getElementById('categoryCount');
+        const troubleshoot = document.getElementById('troubleshoot');
+        const seedNote = document.getElementById('seedNote');
+
+        if (response.ok) {
+          statusDiv.innerHTML = `
+            <strong>✅ Database Connected</strong><br>
+            Items in database: ${data.itemsInDatabase}<br>
+            Categories: ${data.categories.join(', ') || 'None'}
+          `;
+          statusDiv.className = 'status-box info';
+          troubleshoot.style.display = 'none';
+          seedNote.style.display = 'none';
+          
+          itemCount.textContent = data.itemsInDatabase;
+          categoryCount.textContent = data.categories.length;
+          statsDiv.style.display = 'grid';
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (error) {
+        const statusDiv = document.getElementById('statusDisplay');
+        const troubleshoot = document.getElementById('troubleshoot');
+        const statsDiv = document.getElementById('statsDisplay');
+        const seedNote = document.getElementById('seedNote');
+        
+        statusDiv.innerHTML = `
+          <strong>❌ Not Connected</strong><br>
+          <small>${error.message}</small>
+        `;
+        statusDiv.className = 'status-box error';
+        troubleshoot.style.display = 'block';
+        seedNote.style.display = 'block';
+        statsDiv.style.display = 'none';
+      }
+    }
+
+    async function seedDatabase() {
+      const adminKey = document.getElementById('adminKey').value;
+      const statusDiv = document.getElementById('seedStatus');
+
+      if (!adminKey.trim()) {
+        statusDiv.innerHTML = '<strong>❌ Error:</strong> Please enter admin key';
+        statusDiv.className = 'status-box error';
+        return;
+      }
+
+      statusDiv.innerHTML = '<strong>⏳ Seeding database...</strong>';
+      statusDiv.className = 'status-box info';
+
+      try {
+        const response = await fetch('/api/seed/database', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ adminKey })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          statusDiv.innerHTML = `
+            <strong>✅ Success!</strong><br>
+            ${data.message}<br>
+            Items inserted: ${data.itemsInserted}
+          `;
+          statusDiv.className = 'status-box success';
+          
+          // Update status display
+          setTimeout(checkStatus, 1000);
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (error) {
+        statusDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+        statusDiv.className = 'status-box error';
+      }
+    }
+
+    // Initialize
+    displayItemsList();
+    checkStatus();
+  </script>
+</body>
+</html>

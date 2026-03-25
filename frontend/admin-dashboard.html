@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Rental System</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+    }
+
+    .navbar {
+      background: #333;
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar h1 {
+      font-size: 24px;
+    }
+
+    .navbar-right {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .user-info {
+      font-size: 14px;
+    }
+
+    .btn-logout {
+      padding: 8px 15px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-logout:hover {
+      background: #c0392b;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    .section {
+      background: white;
+      padding: 30px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .section h2 {
+      color: #333;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #4CAF50;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #4CAF50;
+      box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #45a049;
+    }
+
+    .btn-danger {
+      background: #e74c3c;
+      color: white;
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .btn-danger:hover {
+      background: #c0392b;
+    }
+
+    .message {
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table th {
+      background: #f5f5f5;
+      padding: 12px;
+      text-align: left;
+      border-bottom: 2px solid #ddd;
+      font-weight: 600;
+      color: #333;
+    }
+
+    table td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    table tr:hover {
+      background: #f9f9f9;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge.admin {
+      background: #3498db;
+      color: white;
+    }
+
+    .badge.shop {
+      background: #9b59b6;
+      color: white;
+    }
+
+    .badge.warehouse {
+      background: #e67e22;
+      color: white;
+    }
+
+    .badge.active {
+      background: #27ae60;
+      color: white;
+    }
+
+    .badge.inactive {
+      background: #95a5a6;
+      color: white;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 5px;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      color: #4CAF50;
+      margin: 20px 0;
+    }
+
+    .empty-message {
+      text-align: center;
+      color: #999;
+      padding: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h1>Admin Dashboard</h1>
+    <div class="navbar-right">
+      <div class="user-info">
+        Welcome, <strong id="adminName">Admin</strong>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Register Staff Section -->
+    <div class="section">
+      <h2>Register New Staff</h2>
+      <div id="registerMessage" class="message"></div>
+
+      <form id="registerForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="staffName">Staff Name</label>
+            <input 
+              type="text" 
+              id="staffName" 
+              required 
+              placeholder="Enter staff name"
+            >
+          </div>
+          <div class="form-group">
+            <label for="staffEmail">Email</label>
+            <input 
+              type="email" 
+              id="staffEmail" 
+              required 
+              placeholder="Enter staff email"
+            >
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="staffPassword">Password</label>
+            <input 
+              type="password" 
+              id="staffPassword" 
+              required 
+              placeholder="Enter staff password"
+            >
+          </div>
+          <div class="form-group">
+            <label for="staffRole">Department</label>
+            <select id="staffRole" required>
+              <option value="">Select Department</option>
+              <option value="shop">Shop</option>
+              <option value="warehouse">Warehouse</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Register Staff</button>
+      </form>
+
+      <div class="loading" id="registerLoading">Registering staff...</div>
+    </div>
+
+    <!-- Staff List Section -->
+    <div class="section">
+      <h2>Manage Staff</h2>
+      <div id="staffListMessage" class="message"></div>
+
+      <div class="loading" id="listLoading">Loading staff list...</div>
+
+      <div id="staffListContainer">
+        <table id="staffTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Registered</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="staffTableBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check authentication
+    window.addEventListener('load', () => {
+      const staffId = localStorage.getItem('staffId');
+      const staffRole = localStorage.getItem('staffRole');
+      const staffName = localStorage.getItem('staffName');
+
+      if (!staffId || staffRole !== 'admin') {
+        window.location.href = '/staff-login';
+        return;
+      }
+
+      document.getElementById('adminName').textContent = staffName;
+      loadStaffList();
+    });
+
+    // Register Staff
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('staffName').value;
+      const email = document.getElementById('staffEmail').value;
+      const password = document.getElementById('staffPassword').value;
+      const role = document.getElementById('staffRole').value;
+
+      const registerLoading = document.getElementById('registerLoading');
+      const registerMessage = document.getElementById('registerMessage');
+
+      try {
+        registerLoading.style.display = 'block';
+
+        const response = await fetch('/api/staff/register-staff', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-staff-id': localStorage.getItem('staffId'),
+          },
+          body: JSON.stringify({ name, email, password, role }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showMessage(registerMessage, data.message || 'Registration failed', 'error');
+          return;
+        }
+
+        showMessage(registerMessage, 'Staff registered successfully!', 'success');
+        document.getElementById('registerForm').reset();
+        loadStaffList();
+      } catch (error) {
+        showMessage(registerMessage, 'Error: ' + error.message, 'error');
+      } finally {
+        registerLoading.style.display = 'none';
+      }
+    });
+
+    // Load Staff List
+    async function loadStaffList() {
+      const listLoading = document.getElementById('listLoading');
+      const staffTableBody = document.getElementById('staffTableBody');
+
+      try {
+        listLoading.style.display = 'block';
+
+        const response = await fetch('/api/staff/all-staff', {
+          headers: {
+            'x-staff-id': localStorage.getItem('staffId'),
+          },
+        });
+
+        const staff = await response.json();
+
+        if (staff.length === 0) {
+          staffTableBody.innerHTML = '<tr><td colspan="6" class="empty-message">No staff members yet</td></tr>';
+          return;
+        }
+
+        staffTableBody.innerHTML = staff.map(s => `
+          <tr>
+            <td>${s.name}</td>
+            <td>${s.email}</td>
+            <td><span class="badge ${s.role}">${s.role.charAt(0).toUpperCase() + s.role.slice(1)}</span></td>
+            <td><span class="badge ${s.isActive ? 'active' : 'inactive'}">${s.isActive ? 'Active' : 'Inactive'}</span></td>
+            <td>${new Date(s.createdAt).toLocaleDateString()}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-danger" onclick="deleteStaff('${s._id}', '${s.name}')">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        showMessage(document.getElementById('staffListMessage'), 'Error loading staff: ' + error.message, 'error');
+      } finally {
+        listLoading.style.display = 'none';
+      }
+    }
+
+    // Delete Staff
+    async function deleteStaff(staffId, staffName) {
+      if (!confirm(`Are you sure you want to delete ${staffName}?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/staff/staff/${staffId}`, {
+          method: 'DELETE',
+          headers: {
+            'x-staff-id': localStorage.getItem('staffId'),
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showMessage(document.getElementById('staffListMessage'), data.message || 'Delete failed', 'error');
+          return;
+        }
+
+        showMessage(document.getElementById('staffListMessage'), 'Staff deleted successfully', 'success');
+        loadStaffList();
+      } catch (error) {
+        showMessage(document.getElementById('staffListMessage'), 'Error: ' + error.message, 'error');
+      }
+    }
+
+    function showMessage(element, msg, type) {
+      element.textContent = msg;
+      element.className = `message ${type} show`;
+      setTimeout(() => {
+        element.classList.remove('show');
+      }, 5000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/staff-login';
+    }
+  </script>
+</body>
+</html>

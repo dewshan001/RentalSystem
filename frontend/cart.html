@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart - RentalSystem</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="/" class="brand">🏠 RentalSystem</a>
+      <ul class="nav-links">
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li><a href="/cart">Cart</a></li>
+        <li><a href="/profile">Profile</a></li>
+        <li><a href="#" onclick="logout(); return false;">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <div id="alert" class="alert"></div>
+
+      <h1>Shopping Cart</h1>
+
+      <div style="display: grid; grid-template-columns: 1fr 300px; gap: 2rem; margin-top: 2rem;">
+        <section>
+          <div id="cartContent">
+            <div class="loading">
+              <div class="spinner"></div>
+              <p>Loading cart...</p>
+            </div>
+          </div>
+        </section>
+
+        <aside>
+          <div class="card" id="cartTotal" style="display: none;">
+            <h3>Order Summary</h3>
+            <hr>
+            <div style="display: flex; justify-content: space-between; margin: 1rem 0;">
+              <span>Subtotal:</span>
+              <strong id="subtotal">Rs0.00</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin: 1rem 0; padding-top: 1rem; border-top: 1px solid #ecf0f1;">
+              <span style="font-size: 1.2rem;">Total:</span>
+              <strong id="total" style="font-size: 1.1rem; color: #27ae60;">Rs0.00</strong>
+            </div>
+            <button onclick="checkout()" class="success" style="width: 100%; margin-top: 1rem;">Proceed to Checkout</button>
+            <button onclick="clearCart()" class="danger" style="width: 100%; margin-top: 0.5rem;">Clear Cart</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <script src="/utils.js"></script>
+  <script>
+    requireLogin();
+
+    async function loadCart() {
+      try {
+        const cart = await getCart();
+        displayCart(cart);
+      } catch (error) {
+        document.getElementById('cartContent').innerHTML = `<p style="color: red;">Error loading cart: ${error.message}</p>`;
+      }
+    }
+
+    function displayCart(cart) {
+      const items = cart.items || [];
+
+      if (items.length === 0) {
+        document.getElementById('cartContent').innerHTML = `
+          <div class="card">
+            <p class="text-center">Your cart is empty</p>
+            <p class="text-center"><a href="/dashboard" class="btn">Continue Shopping</a></p>
+          </div>
+        `;
+        document.getElementById('cartTotal').style.display = 'none';
+        return;
+      }
+
+      let subtotal = 0;
+      const html = items.map(item => {
+        const itemData = item.itemId;
+        const itemTotal = itemData.price * item.quantity * item.rentalDays;
+        subtotal += itemTotal;
+
+        return `
+          <div class="card">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start;">
+              <div>
+                <h3>${itemData.name}</h3>
+                <p>${itemData.description || 'No description'}</p>
+                <p class="text-center" style="margin-top: 1rem;">
+                  <strong>Rs${itemData.price.toFixed(2)}</strong>/day
+                </p>
+              </div>
+              <div>
+                <div style="margin-bottom: 0.5rem;">
+                  <label>Quantity:</label>
+                  <input type="number" value="${item.quantity}" min="1" onchange="updateQuantity('${item.itemId._id}', this.value)">
+                </div>
+                <div style="margin-bottom: 0.5rem;">
+                  <label>Rental Days:</label>
+                  <input type="number" value="${item.rentalDays}" min="1" onchange="updateDays('${item.itemId._id}', this.value)">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                  <strong>Item Total: Rs${itemTotal.toFixed(2)}</strong>
+                </div>
+                <button onclick="removeItem('${item.itemId._id}')" class="danger" style="width: 100%;">Remove</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('cartContent').innerHTML = html;
+      document.getElementById('subtotal').textContent = 'Rs' + subtotal.toFixed(2);
+      document.getElementById('total').textContent = 'Rs' + subtotal.toFixed(2);
+      document.getElementById('cartTotal').style.display = 'block';
+    }
+
+    async function removeItem(itemId) {
+      try {
+        await removeFromCart(itemId);
+        showMessage('Item removed', 'success');
+        loadCart();
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    async function updateQuantity(itemId, quantity) {
+      // Reload cart to update
+      loadCart();
+    }
+
+    async function updateDays(itemId, days) {
+      // Reload cart to update
+      loadCart();
+    }
+
+    async function clearCart() {
+      if (!confirm('Are you sure you want to clear the cart?')) return;
+      try {
+        await apiCall('/cart/clear', 'POST');
+        showMessage('Cart cleared', 'success');
+        loadCart();
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    async function checkout() {
+      try {
+        const cart = await getCart();
+        const items = cart.items || [];
+
+        if (items.length === 0) {
+          showMessage('Cart is empty', 'error');
+          return;
+        }
+
+        // Create rentals for each item
+        for (const cartItem of items) {
+          const itemData = cartItem.itemId;
+          const totalPrice = itemData.price * cartItem.quantity * cartItem.rentalDays;
+          await createRental(itemData._id, cartItem.quantity, cartItem.rentalDays, totalPrice);
+        }
+
+        // Clear cart
+        await clearCart();
+        showMessage('Rental created successfully!', 'success');
+        setTimeout(() => {
+          window.location.href = '/profile';
+        }, 1500);
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    loadCart();
+  </script>
+</body>
+</html>
