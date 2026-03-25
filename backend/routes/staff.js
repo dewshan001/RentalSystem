@@ -91,30 +91,30 @@ router.get('/init-admin', async (req, res) => {
   try {
     // Check if admin exists
     let admin = await Staff.findOne({ email: 'admin@admin.com' });
-    
+
     if (admin) {
       // Admin exists, but make sure it's not broken
       let updated = false;
-      
+
       if (admin.password !== 'admin') {
         admin.password = 'admin';
         updated = true;
       }
-      
+
       if (!admin.isActive) {
         admin.isActive = true;
         updated = true;
       }
-      
+
       if (admin.role !== 'admin') {
         admin.role = 'admin';
         updated = true;
       }
-      
+
       if (updated) {
         await admin.save();
       }
-      
+
       return res.json({
         status: 'success',
         message: 'Admin account verified and ready',
@@ -131,9 +131,9 @@ router.get('/init-admin', async (req, res) => {
         role: 'admin',
         isActive: true,
       });
-      
+
       await newAdmin.save();
-      
+
       return res.json({
         status: 'created',
         message: 'Admin account created successfully',
@@ -142,10 +142,10 @@ router.get('/init-admin', async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       status: 'error',
-      message: 'Error initializing admin', 
-      error: error.message 
+      message: 'Error initializing admin',
+      error: error.message
     });
   }
 });
@@ -290,4 +290,37 @@ router.get('/profile', verifyStaff, async (req, res) => {
   }
 });
 
+// Update staff profile (name / password)
+router.put('/profile', verifyStaff, async (req, res) => {
+  try {
+    const { name, currentPassword, newPassword } = req.body;
+    const staff = await Staff.findById(req.staffId);
+    if (!staff) return res.status(404).json({ message: 'Staff not found' });
+
+    const updates = { updatedAt: Date.now() };
+
+    // Update name
+    if (name && name.trim()) {
+      updates.name = name.trim();
+    }
+
+    // Update password
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required to change password' });
+      }
+      if (staff.password !== currentPassword) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+      updates.password = newPassword;
+    }
+
+    const updated = await Staff.findByIdAndUpdate(req.staffId, updates, { new: true });
+    res.json({ message: 'Profile updated successfully', name: updated.name });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating profile', error: error.message });
+  }
+});
+
 export default router;
+

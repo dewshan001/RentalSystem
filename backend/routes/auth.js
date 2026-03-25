@@ -4,6 +4,22 @@ import { Staff } from '../models/Staff.js';
 
 const router = express.Router();
 
+// Inline admin guard (avoids cross-route import issues)
+const verifyAdmin = async (req, res, next) => {
+  const staffId = req.headers['x-staff-id'];
+  if (!staffId) return res.status(401).json({ message: 'Unauthorized' });
+  try {
+    const staff = await Staff.findById(staffId);
+    if (!staff || staff.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    req.staffId = staffId;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Unauthorized' });
+  }
+};
+
 // Middleware to verify token (simple JWT-like approach with localStorage)
 export const verifyUser = async (req, res, next) => {
   const userId = req.headers['x-user-id'];
@@ -131,6 +147,27 @@ router.delete('/account', verifyUser, async (req, res) => {
     res.json({ message: 'Account deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting account', error: error.message });
+  }
+});
+
+// Admin: Get all users
+router.get('/all-users', verifyAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}, '-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching users', error: error.message });
+  }
+});
+
+// Admin: Delete a user
+router.delete('/users/:id', verifyAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting user', error: error.message });
   }
 });
 

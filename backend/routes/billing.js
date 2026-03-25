@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { Invoice } from '../models/Invoice.js';
 import { Payment } from '../models/Payment.js';
 import { Credit } from '../models/Credit.js';
@@ -15,6 +16,10 @@ function genInvoiceNum() {
 }
 function genPaymentNum() {
   return 'PAY-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+}
+
+function isValidObjectId(id) {
+  return mongoose.Types.ObjectId.isValid(id);
 }
 
 //calculate late fee days using 9 AM rule 
@@ -146,12 +151,49 @@ router.post('/record-payment/:invoiceId', verifyStaff, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    if (!isValidObjectId(req.params.invoiceId)) {
+      return res.status(400).json({ message: 'Invalid invoice id' });
+    }
+
     const { amount, paymentType, paymentMethod, notes } = req.body;
-    if (!amount || amount <= 0) return res.status(400).json({ message: 'Invalid payment amount' });
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      return res.status(400).json({ message: 'Invalid payment amount' });
+    }
+
+    const trimmedNotes = (typeof notes === 'string') ? notes.trim() : '';
+    if (trimmedNotes && trimmedNotes.length > 500) {
+      return res.status(400).json({ message: 'Notes too long (max 500 characters)' });
+    }
+
+    const allowedTypes = ['advance', 'partial', 'full', 'settlement'];
+    const allowedMethods = ['cash', 'card', 'bank_transfer', 'other'];
+    if (paymentType !== undefined && paymentType !== null && paymentType !== '') {
+      if (!allowedTypes.includes(paymentType)) {
+        return res.status(400).json({ message: 'Invalid payment type' });
+      }
+    }
+    if (paymentMethod !== undefined && paymentMethod !== null && paymentMethod !== '') {
+      if (!allowedMethods.includes(paymentMethod)) {
+        return res.status(400).json({ message: 'Invalid payment method' });
+      }
+    }
 
     const invoice = await Invoice.findById(req.params.invoiceId);
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     if (invoice.status === 'cancelled') return res.status(400).json({ message: 'Cannot pay a cancelled invoice' });
+    if (invoice.status === 'archived') return res.status(400).json({ message: 'Cannot pay an archived invoice' });
+
+    if (staff.role === 'shop' && String(invoice.shopId) !== String(staff._id)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    if ((invoice.balanceDue || 0) <= 0) {
+      return res.status(400).json({ message: 'Invoice is already paid' });
+    }
+    if (amt - (invoice.balanceDue || 0) > 0.00001) {
+      return res.status(400).json({ message: `Payment amount cannot exceed balance due (Rs. ${Number(invoice.balanceDue || 0).toFixed(2)})` });
+    }
 
     const payment = new Payment({
       paymentNumber: genPaymentNum(),
@@ -160,16 +202,16 @@ router.post('/record-payment/:invoiceId', verifyStaff, async (req, res) => {
       shopId: invoice.shopId,
       customerName: invoice.customerName,
       customerPhone: invoice.customerPhone,
-      amount,
-      paymentType: paymentType || (amount >= invoice.balanceDue ? 'full' : 'partial'),
+      amount: amt,
+      paymentType: paymentType || (amt >= invoice.balanceDue ? 'full' : 'partial'),
       paymentMethod: paymentMethod || 'cash',
-      notes,
+      notes: trimmedNotes || undefined,
       receivedBy: staff._id,
     });
     await payment.save();
 
     //Update invoice
-    invoice.amountPaid += amount;
+    invoice.amountPaid += amt;
     invoice.balanceDue = invoice.totalAmount - invoice.amountPaid;
     if (invoice.balanceDue <= 0) {
       invoice.balanceDue = 0;
@@ -183,7 +225,7 @@ router.post('/record-payment/:invoiceId', verifyStaff, async (req, res) => {
     //Update credit record
     const credit = await Credit.findOne({ invoiceId: invoice._id, status: { $ne: 'cleared' } });
     if (credit) {
-      credit.totalPaid += amount;
+      credit.totalPaid += amt;
       credit.balance = credit.totalOwed - credit.totalPaid;
       credit.lastPaymentDate = new Date();
       if (credit.balance <= 0) {
@@ -537,14 +579,24 @@ router.delete('/payments/:id', verifyStaff, async (req, res) => {
       return res.status(403).json({ message: 'Only admin can delete payment records' });
     }
 
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid payment id' });
+    }
+
+    const reason = (typeof req.body?.reason === 'string') ? req.body.reason.trim() : '';
+    if (!reason) {
+      return res.status(400).json({ message: 'Delete reason is required' });
+    }
+
     const payment = await Payment.findById(req.params.id);
     if (!payment) return res.status(404).json({ message: 'Payment not found' });
+    if (payment.isDeleted) return res.status(400).json({ message: 'Payment is already deleted' });
 
     // Soft-delete
     payment.isDeleted = true;
     payment.deletedBy = staff._id;
     payment.deletedAt = new Date();
-    payment.deleteReason = req.body.reason || '';
+    payment.deleteReason = reason;
     await payment.save();
 
     // Reverse the amount on invoice
