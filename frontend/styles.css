@@ -569,13 +569,21 @@ tr:hover {
 }
 
 .auth-page.auth-register-page {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.auth-page.auth-register-page::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .auth-page.auth-register-page main {
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
-  padding: 5.3rem 1.4rem 1rem;
+  padding: 6.1rem 1.4rem 0.8rem;
 }
 
 .auth-page.auth-register-page .glass-panel {
@@ -608,13 +616,20 @@ tr:hover {
 }
 
 .auth-page.auth-login-page main {
+  height: 100vh;
+  min-height: 100vh;
   align-items: center;
 }
 
 .auth-page.auth-login-page main .container {
-  min-height: calc(100vh - 8.9rem);
+  min-height: auto;
+  height: 100%;
   display: flex;
   align-items: center;
+}
+
+.auth-page.auth-login-page {
+  overflow: hidden;
 }
 
 .glass-shape {
