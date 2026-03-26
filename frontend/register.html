@@ -4,156 +4,132 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register - RentalSystem</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/auth-modern.css">
 </head>
-<body class="auth-page auth-register-page">
-  <!-- Animated Background Shapes -->
-  <div class="glass-shape glass-shape-1"></div>
-  <div class="glass-shape glass-shape-2"></div>
+<body class="auth-split-layout">
+  <div class="auth-banner">
+    <div class="auth-banner-content">
+      <h1>Join RentalSystem<br>Today</h1>
+      <p>Sign up now to browse our catalog, manage current rentals, and enjoy a seamless experience.</p>
+    </div>
+  </div>
 
-  <main>
-    <div class="container">
-      <div id="alert" class="alert" style="display: none; width: 100%; max-width: 450px; margin: 0 auto 1.5rem;"></div>
+  <div class="auth-content">
+    <div class="auth-content-inner">
+      <div id="alert" class="alert" style="display: none; padding: 12px; margin-bottom: 20px; border-radius: 6px;"></div>
 
-      <div class="glass-panel auth-register-panel">
-        <h1 class="text-center mb-4">Create Account</h1>
-        <p class="auth-subtitle text-center">Start your rental journey with a secure new account.</p>
-        <form id="registerForm">
-          <div class="form-group">
-            <label for="name">Full Name</label>
-            <input type="text" id="name" name="name" class="glass-input" placeholder="John Doe" required>
-          </div>
+      <h2>Create Account</h2>
+      <p class="auth-subtitle">Start your rental journey with a secure new account.</p>
+      
+      <form id="registerForm">
+        <div class="modern-form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" class="modern-input" placeholder="John Doe" required>
+        </div>
 
-          <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" class="glass-input" placeholder="john@example.com" required>
-            <small id="emailError" style="color: #e74c3c; display: none; margin-top: 5px; font-weight: 500;"></small>
-          </div>
+        <div class="modern-form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" class="modern-input" placeholder="john@example.com" required>
+          <small id="emailError" style="color: #e74c3c; display: none; margin-top: 5px; font-weight: 500;"></small>
+        </div>
 
-          <div class="form-group">
+        <div style="display: flex; gap: 15px;">
+          <div class="modern-form-group" style="flex: 1;">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" class="glass-input" placeholder="At least 6 characters" required>
+            <input type="password" id="password" name="password" class="modern-input" placeholder="Min. 6 characters" required>
           </div>
-
-          <div class="form-group">
+          <div class="modern-form-group" style="flex: 1;">
             <label for="confirmPassword">Confirm Password</label>
-            <input type="password" id="confirmPassword" name="confirmPassword" class="glass-input" placeholder="Repeat password" required>
+            <input type="password" id="confirmPassword" name="confirmPassword" class="modern-input" placeholder="Repeat password" required>
             <small id="passwordMatchError" style="color: #e74c3c; display: none; margin-top: 5px; font-weight: 500;"></small>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label for="phone">Phone Number</label>
-            <input type="tel" id="phone" name="phone" class="glass-input" placeholder="10 digits required">
-            <small id="phoneError" style="color: #e74c3c; display: none; margin-top: 5px; font-weight: 500;"></small>
-          </div>
+        <div class="modern-form-group">
+          <label for="phone">Phone Number</label>
+          <input type="tel" id="phone" name="phone" class="modern-input" placeholder="10 digits required">
+          <small id="phoneError" style="color: #e74c3c; display: none; margin-top: 5px; font-weight: 500;"></small>
+        </div>
 
-          <button type="submit" class="glass-btn w-100">Register</button>
+        <button type="submit" class="modern-btn">Register</button>
 
-          <p class="auth-links mt-3">
-            Already have an account? <a href="/login">Sign In</a>
-          </p>
-
-          <hr style="margin: 1rem 0 0.85rem; border: none; border-top: 1px solid rgba(255,255,255,0.3);">
-          
-          <div style="text-align: center; margin-top: 0.4rem;">
-            <p style="color: #666; font-size: 14px; margin-bottom: 0.7rem;">Are you an admin or staff member?</p>
-            <div style="display: flex; justify-content: center; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin: 0.2rem 0 0.2rem;">
-              <a href="/staff-login" class="glass-btn" style="display: inline-block; width: auto; min-width: 150px; margin-top: 0; padding: 10px 20px; text-align: center; text-decoration: none;">
-                Staff Login
-              </a>
-              <a href="/" class="glass-btn" style="display: inline-block; width: auto; min-width: 150px; margin-top: 0; padding: 10px 20px; text-align: center; text-decoration: none;">
-                Back to Home
-              </a>
-            </div>
-          </div>
-        </form>
-      </div>
+        <p class="modern-auth-links">
+          Already have an account? <a href="/login">Sign In</a>
+        </p>
+      </form>
     </div>
-  </main>
+  </div>
 
   <script src="/utils.js"></script>
   <script>
-    const phoneInput = document.getElementById('phone');
-    const phoneError = document.getElementById('phoneError');
-    const emailInput = document.getElementById('email');
-    const emailError = document.getElementById('emailError');
-    const passwordInput = document.getElementById('password');
-    const confirmPasswordInput = document.getElementById('confirmPassword');
-    const passwordMatchError = document.getElementById('passwordMatchError');
+    document.addEventListener('DOMContentLoaded', () => {
+      const registerForm = document.getElementById('registerForm');
+      if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const name = document.getElementById('name').value.trim();
+          const email = document.getElementById('email').value.trim();
+          const password = document.getElementById('password').value;
+          const confirmPassword = document.getElementById('confirmPassword').value;
+          const phone = document.getElementById('phone').value.trim();
+          
+          const passwordMatchError = document.getElementById('passwordMatchError');
+          const emailError = document.getElementById('emailError');
+          const phoneError = document.getElementById('phoneError');
+          
+          let hasError = false;
 
-    // Real-time phone validation
-    phoneInput.addEventListener('input', (e) => {
-      const phone = e.target.value;
-      if (phone.length > 0 && phone.length !== 10) {
-        phoneError.textContent = 'Phone number must be exactly 10 digits';
-        phoneError.style.display = 'block';
-      } else {
-        phoneError.style.display = 'none';
+          passwordMatchError.style.display = 'none';
+          emailError.style.display = 'none';
+          phoneError.style.display = 'none';
+
+          if (password !== confirmPassword) {
+            passwordMatchError.textContent = 'Passwords do not match';
+            passwordMatchError.style.display = 'block';
+            hasError = true;
+          }
+
+          if (phone && !/^\d{10}$/.test(phone)) {
+            phoneError.textContent = 'Phone must be 10 digits';
+            phoneError.style.display = 'block';
+            hasError = true;
+          }
+
+          if (hasError) return;
+
+          try {
+            const response = await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, email, password, phone, role: 'user' })
+            });
+            const data = await response.json();
+            
+            if (response.ok) {
+              showAlert('Registration successful! Redirecting to login...', 'success');
+              setTimeout(() => {
+                window.location.href = '/login';
+              }, 2000);
+            } else {
+              showAlert(data.message || 'Registration failed', 'error');
+            }
+          } catch (error) {
+            console.error('Registration error:', error);
+            showAlert('Cannot connect to server', 'error');
+          }
+        });
       }
     });
 
-    // Real-time email validation
-    emailInput.addEventListener('input', (e) => {
-      const email = e.target.value;
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (email.length > 0 && !re.test(email)) {
-        emailError.textContent = 'Please enter a valid email address';
-        emailError.style.display = 'block';
-      } else {
-        emailError.style.display = 'none';
-      }
-    });
-
-    // Real-time password match validation
-    function checkPasswordsMatch() {
-      if (confirmPasswordInput.value.length > 0 && passwordInput.value !== confirmPasswordInput.value) {
-        passwordMatchError.textContent = 'Passwords do not match';
-        passwordMatchError.style.display = 'block';
-      } else {
-        passwordMatchError.style.display = 'none';
-      }
+    // Defining showAlert function locally overrides utils.js generic one if any, or supports page local
+    function showAlert(message, type) {
+      const alertDiv = document.getElementById('alert');
+      alertDiv.textContent = message;
+      alertDiv.style.display = 'block';
+      alertDiv.style.background = type === 'success' ? '#d4edda' : '#feeced';
+      alertDiv.style.color = type === 'success' ? '#155724' : '#dc3545';
+      alertDiv.style.borderColor = type === 'success' ? '#c3e6cb' : '#f5c6cb';
     }
-
-    passwordInput.addEventListener('input', checkPasswordsMatch);
-    confirmPasswordInput.addEventListener('input', checkPasswordsMatch);
-
-    document.getElementById('registerForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const name = document.getElementById('name').value;
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const confirmPassword = document.getElementById('confirmPassword').value;
-      const phone = document.getElementById('phone').value;
-
-      if (password !== confirmPassword) {
-        showMessage('Passwords do not match', 'error');
-        passwordMatchError.style.display = 'block';
-        return;
-      }
-      
-      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRe.test(email)) {
-        showMessage('Invalid email address', 'error');
-        return;
-      }
-
-      if (phone && phone.length !== 10) {
-        showMessage('Phone number must be exactly 10 digits', 'error');
-        return;
-      }
-
-      try {
-        const response = await register(name, email, password, phone);
-        setUserId(response.userId);
-        showMessage('Registration successful! Redirecting to dashboard...', 'success');
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1500);
-      } catch (error) {
-        showError(error);
-      }
-    });
   </script>
 </body>
 </html>

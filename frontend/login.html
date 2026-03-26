@@ -4,96 +4,112 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - RentalSystem</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/auth-modern.css">
 </head>
-<body class="auth-page auth-login-page">
-  <!-- Animated Background Shapes -->
-  <div class="glass-shape glass-shape-1"></div>
-  <div class="glass-shape glass-shape-2"></div>
-
-  <main>
-    <div class="container">
-      <div id="alert" class="alert" style="display: none; width: 100%; max-width: 450px; margin: 0 auto 1.5rem;"></div>
-
-      <div class="glass-panel">
-        <h1 class="text-center mb-4">Welcome Back</h1>
-        <p class="auth-subtitle text-center">Sign in to manage your rentals in one place.</p>
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" class="glass-input" placeholder="Enter your email" required>
-            <small id="emailError" style="color: #e74c3c; display: none; margin-top: 5px; font-weight: 500;"></small>
-          </div>
-
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" class="glass-input" placeholder="Enter your password" required>
-          </div>
-
-          <button type="submit" class="glass-btn w-100">Sign In</button>
-
-          <p class="auth-links mt-3">
-            Don't have an account? <a href="/register">Create one</a>
-          </p>
-
-          <hr style="margin: 0.8rem 0 0.6rem; border: none; border-top: 1px solid rgba(255,255,255,0.3);">
-          
-          <div style="text-align: center; margin-top: 0.4rem;">
-            <p style="color: #666; font-size: 14px; margin-bottom: 1rem;">Are you an admin or staff member?</p>
-            <div style="display: flex; justify-content: center; align-items: center; gap: 0.7rem; flex-wrap: wrap;">
-              <a href="/staff-login" class="glass-btn" style="display: inline-block; width: auto; min-width: 150px; margin-top: 0; padding: 10px 20px; text-align: center; text-decoration: none;">
-                Staff Login
-              </a>
-              <a href="/" class="glass-btn" style="display: inline-block; width: auto; min-width: 150px; margin-top: 0; padding: 10px 20px; text-align: center; text-decoration: none;">
-                Back to Home
-              </a>
-            </div>
-          </div>
-        </form>
-      </div>
+<body class="auth-split-layout">
+  <div class="auth-banner">
+    <div class="auth-banner-content">
+      <h1>Your Rental<br>Journey Starts Here</h1>
+      <p>Manage, track, and easily interact with the assets you love inside one secure place.</p>
     </div>
-  </main>
+  </div>
+
+  <div class="auth-content">
+    <div class="auth-content-inner">
+      <div id="alert" class="alert" style="display: none; padding: 12px; margin-bottom: 20px; border-radius: 6px; background: #feeced; color: #dc3545; border: 1px solid #f5c6cb;"></div>
+
+      <h2>Welcome Back</h2>
+      <p class="auth-subtitle">Sign in to manage your rentals in one place.</p>
+      
+      <form id="loginForm">
+        <div class="modern-form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" class="modern-input" placeholder="Enter your email" required>
+          <small id="emailError" style="color: #e74c3c; display: none; margin-top: 5px; font-weight: 500;"></small>
+        </div>
+
+        <div class="modern-form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" class="modern-input" placeholder="Enter your password" required>
+        </div>
+
+        <button type="submit" class="modern-btn">Sign In</button>
+
+        <p class="modern-auth-links">
+          Don't have an account? <a href="/register">Create one</a>
+        </p>
+
+        <div class="divider">or continue with</div>
+        
+        <div class="secondary-actions">
+          <a href="/staff-login" class="btn-outline">Staff Login</a>
+          <a href="/" class="btn-outline">Back to Home</a>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="/utils.js"></script>
   <script>
-    const emailInput = document.getElementById('email');
-    const emailError = document.getElementById('emailError');
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginForm = document.getElementById('loginForm');
+      if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const email = document.getElementById('email').value.trim();
+          const password = document.getElementById('password').value;
+          const emailError = document.getElementById('emailError');
 
-    // Real-time email validation
-    emailInput.addEventListener('input', (e) => {
-      const email = e.target.value;
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (email.length > 0 && !re.test(email)) {
-        emailError.textContent = 'Please enter a valid email address';
-        emailError.style.display = 'block';
-      } else {
-        emailError.style.display = 'none';
+          emailError.style.display = 'none';
+          
+          if (!email || !password) {
+            showAlert('Please fill in both email and password', 'error');
+            return;
+          }
+
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password })
+            });
+            const data = await response.json();
+            
+            if (response.ok) {
+              localStorage.setItem('token', data.token);
+              localStorage.setItem('user', JSON.stringify({
+                id: data.user.id,
+                name: data.user.name,
+                role: data.user.role
+              }));
+              
+              showAlert('Login successful! Redirecting...', 'success');
+              
+              setTimeout(() => {
+                if (data.user.role === 'admin') window.location.href = '/admin-dashboard';
+                else if (['warehouse', 'shop', 'billing', 'staff'].includes(data.user.role)) window.location.href = `/${data.user.role}-dashboard`;
+                else window.location.href = '/dashboard';
+              }, 1500);
+            } else {
+              showAlert(data.message || 'Login failed', 'error');
+            }
+          } catch (error) {
+            console.error('Login error:', error);
+            showAlert('Cannot connect to server', 'error');
+          }
+        });
       }
     });
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const email = emailInput.value;
-      const password = document.getElementById('password').value;
-      
-      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRe.test(email)) {
-        showMessage('Invalid email address', 'error');
-        return;
-      }
-
-      try {
-        const response = await login(email, password);
-        setUserId(response.userId);
-        showMessage('Login successful! Redirecting to dashboard...', 'success');
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1500);
-      } catch (error) {
-        showError(error);
-      }
-    });
+    // We also need showAlert definition on modern styling
+    function showAlert(message, type) {
+      const alertDiv = document.getElementById('alert');
+      alertDiv.textContent = message;
+      alertDiv.style.display = 'block';
+      alertDiv.style.background = type === 'success' ? '#d4edda' : '#feeced';
+      alertDiv.style.color = type === 'success' ? '#155724' : '#dc3545';
+      alertDiv.style.borderColor = type === 'success' ? '#c3e6cb' : '#f5c6cb';
+    }
   </script>
 </body>
 </html>
